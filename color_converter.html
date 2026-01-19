@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Color Converter — Hex / RGB(A) / HSL(A) / OKLCH</title>
+  <style>
+    :root{
+      --bg:#0b0d12; --panel:#121628; --panel2:#0f1322; --text:#e9ecf3; --muted:#aab2c8;
+      --accent:#7aa2ff; --danger:#ff6b6b; --ok:#63d69f; --border:rgba(255,255,255,.10);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      font-synthesis-weight:none;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font: 14px/1.35 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: radial-gradient(1200px 700px at 20% 10%, rgba(122,162,255,.18), transparent 60%),
+                  radial-gradient(900px 500px at 90% 30%, rgba(99,214,159,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:28px 20px 10px;
+      max-width:1100px; margin:0 auto;
+    }
+    h1{margin:0; font-size:22px; letter-spacing:.2px}
+    header p{margin:8px 0 0; color:var(--muted)}
+    .wrap{max-width:1100px; margin:0 auto; padding:14px 20px 34px; display:grid; gap:14px;}
+    .top{
+      display:grid; gap:14px;
+      grid-template-columns: 1.2fr .8fr;
+      align-items:stretch;
+    }
+    @media (max-width: 860px){ .top{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      background: rgba(255,255,255,.02);
+    }
+    .card .hd .title{font-weight:650}
+    .card .bd{padding:14px}
+
+    .preview{
+      display:grid; grid-template-columns: 1fr;
+      gap:12px;
+    }
+    .swatch{
+      height:140px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: repeating-conic-gradient(rgba(255,255,255,.12) 0% 25%, rgba(255,255,255,.04) 0% 50%) 50%/20px 20px;
+      position:relative;
+      overflow:hidden;
+    }
+    .swatch::after{
+      content:"";
+      position:absolute; inset:0;
+      background: var(--swatch, rgba(122,162,255,1));
+    }
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .chip{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius: 999px; border:1px solid var(--border); background: rgba(0,0,0,.18)}
+    .dot{width:10px; height:10px; border-radius:999px; background: var(--swatch, #fff); border:1px solid rgba(255,255,255,.25)}
+
+    .grid{
+      display:grid; gap:14px;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+    @media (max-width: 860px){ .grid{grid-template-columns:1fr} }
+
+    .fieldRow{display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center; margin:10px 0 0}
+    .fieldRow:first-child{margin-top:0}
+
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    input[type="text"], input[type="number"]{
+      width:100%; padding:10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      outline:none;
+    }
+    input[type="text"]:focus, input[type="number"]:focus{border-color: rgba(122,162,255,.55); box-shadow: 0 0 0 3px rgba(122,162,255,.15)}
+
+    input[type="color"]{
+      width:46px; height:40px;
+      padding:0; border:0;
+      background: transparent;
+    }
+
+    .btn{
+      padding:10px 12px; border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+      white-space:nowrap;
+    }
+    .btn:hover{background: rgba(255,255,255,.09)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{border-color: rgba(122,162,255,.35); background: rgba(122,162,255,.14)}
+    .btn.primary:hover{background: rgba(122,162,255,.18)}
+
+    .note{color:var(--muted); font-size:12px; margin-top:10px}
+    .warn{color: #ffd37a; font-size:12px; margin-top:10px}
+    .err{color: var(--danger); font-size:12px; margin-top:10px}
+
+    .tiny{font-size:12px; color:var(--muted)}
+    .kbd{font: 12px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; padding:4px 7px; border-radius: 8px; border:1px solid rgba(255,255,255,.16); background: rgba(0,0,0,.28)}
+
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Color Converter</h1>
+    <p>Convert between <b>Hex</b>, <b>RGB(A)</b>, <b>HSL(A)</b>, and <b>OKLCH</b>. Edit any field; the rest update instantly.</p>
+  </header>
+
+  <main class="wrap">
+    <section class="top">
+      <div class="card">
+        <div class="hd">
+          <div class="title">Preview</div>
+          <div class="row">
+            <span class="chip"><span class="dot"></span><span id="chipText" class="mono">rgba(0,0,0,1)</span></span>
+            <button class="btn" id="btnCopyCss" title="Copy CSS color">Copy CSS</button>
+            <button class="btn" id="btnReset" title="Reset to a pleasant blue">Reset</button>
+          </div>
+        </div>
+        <div class="bd preview">
+          <div class="swatch" id="swatch" aria-label="Color swatch"></div>
+          <div class="row">
+            <div class="tiny">Tip: press <span class="kbd">Ctrl</span>/<span class="kbd">⌘</span> + <span class="kbd">C</span> after focusing a field, or use Copy buttons.</div>
+          </div>
+          <div id="status" class="note"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd">
+          <div class="title">Quick Pick</div>
+          <div class="tiny">(uses sRGB)</div>
+        </div>
+        <div class="bd">
+          <div class="fieldRow">
+            <div>
+              <label for="picker">Color picker</label>
+              <input id="picker" type="color" value="#7aa2ff" />
+            </div>
+            <button class="btn primary" id="btnFromPicker">Use picker</button>
+          </div>
+          <div class="note">The picker can’t represent out-of-gamut OKLCH values. Converting from OKLCH may clamp to the nearest displayable sRGB.</div>
+          <div id="gamutWarn" class="warn" style="display:none"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <div class="hd"><div class="title">Hex</div><button class="btn" data-copy="hex">Copy</button></div>
+        <div class="bd">
+          <div class="fieldRow">
+            <div>
+              <label for="hex">#RRGGBB or #RRGGBBAA</label>
+              <input id="hex" type="text" class="mono" placeholder="#7aa2ff" />
+            </div>
+            <button class="btn" id="btnApplyHex">Apply</button>
+          </div>
+          <div class="note">Accepted: <span class="mono">#RGB</span>, <span class="mono">#RGBA</span>, <span class="mono">#RRGGBB</span>, <span class="mono">#RRGGBBAA</span>.</div>
+          <div id="hexErr" class="err" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><div class="title">RGB(A)</div><button class="btn" data-copy="rgba">Copy</button></div>
+        <div class="bd">
+          <div class="fieldRow">
+            <div>
+              <label for="rgbText">rgb(...) / rgba(...) / comma or space separated</label>
+              <input id="rgbText" type="text" class="mono" placeholder="rgba(122,162,255,1)" />
+            </div>
+            <button class="btn" id="btnApplyRgb">Apply</button>
+          </div>
+          <div class="note">Examples: <span class="mono">255 0 0 / 0.5</span>, <span class="mono">rgb(255,0,0)</span>, <span class="mono">rgba(255, 0, 0, 50%)</span>.</div>
+          <div id="rgbErr" class="err" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><div class="title">HSL(A)</div><button class="btn" data-copy="hsla">Copy</button></div>
+        <div class="bd">
+          <div class="fieldRow">
+            <div>
+              <label for="hslText">hsl(...) / hsla(...) / space separated</label>
+              <input id="hslText" type="text" class="mono" placeholder="hsla(220 100% 74% / 1)" />
+            </div>
+            <button class="btn" id="btnApplyHsl">Apply</button>
+          </div>
+          <div class="note">Examples: <span class="mono">220 100% 50%</span>, <span class="mono">hsl(220,100%,50%)</span>, <span class="mono">hsl(220 100% 50% / 0.6)</span>.</div>
+          <div id="hslErr" class="err" style="display:none"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="hd"><div class="title">OKLCH</div><button class="btn" data-copy="oklch">Copy</button></div>
+        <div class="bd">
+          <div class="fieldRow">
+            <div>
+              <label for="oklchText">oklch(L C h / a) — L in [0..1], C in [0..~0.4], h in degrees</label>
+              <input id="oklchText" type="text" class="mono" placeholder="oklch(0.78 0.13 250 / 1)" />
+            </div>
+            <button class="btn" id="btnApplyOklch">Apply</button>
+          </div>
+          <div class="note">Examples: <span class="mono">0.8 0.1 140</span>, <span class="mono">oklch(0.8 0.1 140)</span>, <span class="mono">oklch(0.8 0.1 140 / 80%)</span>.</div>
+          <div id="oklchErr" class="err" style="display:none"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    const clamp01 = (x) => Math.min(1, Math.max(0, x));
+    const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+    const round = (x, d=3) => {
+      const p = Math.pow(10, d);
+      return Math.round(x * p) / p;
+    };
+    const fmtPct = (x) => `${Math.round(x * 100)}%`;
+    const toFixedTrim = (x, d=4) => {
+      const s = Number(x).toFixed(d);
+      return s.replace(/\.0+$/,'').replace(/(\.\d*?)0+$/,'$1');
+    };
+
+    const copyToClipboard = async (text) => {
+      try{
+        await navigator.clipboard.writeText(text);
+        toast(`Copied: ${text}`);
+      }catch{
+        // Fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        toast(`Copied: ${text}`);
+      }
+    };
+
+    let toastTimer = null;
+    function toast(msg){
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'note';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.textContent = ''; }, 2000);
+    }
+
+    function setError(id, message){
+      const el = document.getElementById(id);
+      if(!message){ el.style.display='none'; el.textContent=''; return; }
+      el.style.display='block';
+      el.textContent = message;
+    }
+
+    // -----------------------------
+    // sRGB companding
+    // -----------------------------
+    function srgbToLinear(u){
+      u = clamp01(u);
+      return (u <= 0.04045) ? (u / 12.92) : Math.pow((u + 0.055) / 1.055, 2.4);
+    }
+    function linearToSrgb(u){
+      // u may be outside 0..1 before gamut clamp
+      return (u <= 0.0031308) ? (12.92 * u) : (1.055 * Math.pow(u, 1/2.4) - 0.055);
+    }
+
+    // -----------------------------
+    // Hex
+    // -----------------------------
+    function parseHex(str){
+      str = (str || '').trim();
+      if(!str) return null;
+      if(str[0] === '#') str = str.slice(1);
+      if(!/^[0-9a-fA-F]+$/.test(str)) return null;
+      if(str.length === 3 || str.length === 4){
+        const r = parseInt(str[0] + str[0], 16);
+        const g = parseInt(str[1] + str[1], 16);
+        const b = parseInt(str[2] + str[2], 16);
+        const a = (str.length === 4) ? parseInt(str[3] + str[3], 16) / 255 : 1;
+        return { r: r/255, g: g/255, b: b/255, a: clamp01(a) };
+      }
+      if(str.length === 6 || str.length === 8){
+        const r = parseInt(str.slice(0,2), 16);
+        const g = parseInt(str.slice(2,4), 16);
+        const b = parseInt(str.slice(4,6), 16);
+        const a = (str.length === 8) ? parseInt(str.slice(6,8), 16) / 255 : 1;
+        return { r: r/255, g: g/255, b: b/255, a: clamp01(a) };
+      }
+      return null;
+    }
+
+    function rgbaToHex({r,g,b,a}, withAlpha=true){
+      const R = Math.round(clamp01(r)*255);
+      const G = Math.round(clamp01(g)*255);
+      const B = Math.round(clamp01(b)*255);
+      const A = Math.round(clamp01(a)*255);
+      const hex = (n) => n.toString(16).padStart(2,'0');
+      return '#' + hex(R) + hex(G) + hex(B) + (withAlpha ? hex(A) : '');
+    }
+
+    // -----------------------------
+    // RGB(A) parser
+    // Accepts: "rgb(1 2 3 / .5)"; "rgba(1,2,3,0.5)"; "255 0 0 / 50%" etc.
+    // RGB can be 0-255 or percentage.
+    // Alpha can be 0-1 or percentage.
+    // -----------------------------
+    function parseCssNumber(token){
+      token = token.trim();
+      if(token.endsWith('%')) return { type:'pct', value: parseFloat(token)/100 };
+      return { type:'num', value: parseFloat(token) };
+    }
+
+    function parseRgbLike(str){
+      str = (str || '').trim();
+      if(!str) return null;
+      // Strip rgb/rgba wrapper
+      str = str.replace(/^rgba?\(/i,'').replace(/\)$/,'').trim();
+      // Normalize separators: commas -> spaces
+      str = str.replace(/,/g,' ');
+      // Split alpha via '/'
+      let alphaPart = null;
+      if(str.includes('/')){
+        const parts = str.split('/');
+        str = parts[0].trim();
+        alphaPart = parts[1].trim();
+      }
+      const comps = str.split(/\s+/).filter(Boolean);
+      if(comps.length < 3) return null;
+      const c = comps.slice(0,3).map(parseCssNumber);
+
+      function compToUnit(x){
+        if(Number.isNaN(x.value)) return null;
+        if(x.type === 'pct') return clamp01(x.value);
+        // interpret as 0..255
+        return clamp01(x.value / 255);
+      }
+      const r = compToUnit(c[0]);
+      const g = compToUnit(c[1]);
+      const b = compToUnit(c[2]);
+      if([r,g,b].some(v => v === null)) return null;
+
+      let a = 1;
+      if(alphaPart !== null && alphaPart !== ''){
+        const ap = parseCssNumber(alphaPart);
+        if(Number.isNaN(ap.value)) return null;
+        a = (ap.type === 'pct') ? clamp01(ap.value) : clamp01(ap.value);
+      } else if(comps.length >= 4){
+        const ap = parseCssNumber(comps[3]);
+        if(Number.isNaN(ap.value)) return null;
+        a = (ap.type === 'pct') ? clamp01(ap.value) : clamp01(ap.value);
+      }
+      return { r, g, b, a };
+    }
+
+    // -----------------------------
+    // HSL
+    // -----------------------------
+    function rgbToHsl({r,g,b,a}){
+      r = clamp01(r); g = clamp01(g); b = clamp01(b);
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      const d = max - min;
+      let h = 0;
+      let s = 0;
+      const l = (max + min) / 2;
+
+      if(d !== 0){
+        s = d / (1 - Math.abs(2*l - 1));
+        switch(max){
+          case r: h = ((g - b) / d) % 6; break;
+          case g: h = ((b - r) / d) + 2; break;
+          case b: h = ((r - g) / d) + 4; break;
+        }
+        h *= 60;
+        if(h < 0) h += 360;
+      }
+      return { h, s: clamp01(s), l: clamp01(l), a: clamp01(a) };
+    }
+
+    function hslToRgb({h,s,l,a}){
+      h = ((h % 360) + 360) % 360;
+      s = clamp01(s); l = clamp01(l);
+      const c = (1 - Math.abs(2*l - 1)) * s;
+      const hp = h / 60;
+      const x = c * (1 - Math.abs((hp % 2) - 1));
+      let r1=0,g1=0,b1=0;
+      if(hp>=0 && hp<1){ r1=c; g1=x; b1=0; }
+      else if(hp<2){ r1=x; g1=c; b1=0; }
+      else if(hp<3){ r1=0; g1=c; b1=x; }
+      else if(hp<4){ r1=0; g1=x; b1=c; }
+      else if(hp<5){ r1=x; g1=0; b1=c; }
+      else { r1=c; g1=0; b1=x; }
+      const m = l - c/2;
+      return { r: clamp01(r1+m), g: clamp01(g1+m), b: clamp01(b1+m), a: clamp01(a) };
+    }
+
+    function parseHslLike(str){
+      str = (str || '').trim();
+      if(!str) return null;
+      str = str.replace(/^hsla?\(/i,'').replace(/\)$/,'').trim();
+      str = str.replace(/,/g,' ');
+      let alphaPart = null;
+      if(str.includes('/')){
+        const parts = str.split('/');
+        str = parts[0].trim();
+        alphaPart = parts[1].trim();
+      }
+      const comps = str.split(/\s+/).filter(Boolean);
+      if(comps.length < 3) return null;
+
+      const h = parseFloat(comps[0]);
+      if(Number.isNaN(h)) return null;
+
+      const sTok = comps[1].trim();
+      const lTok = comps[2].trim();
+      if(!sTok.endsWith('%') || !lTok.endsWith('%')) return null;
+      const s = parseFloat(sTok)/100;
+      const l = parseFloat(lTok)/100;
+      if([s,l].some(Number.isNaN)) return null;
+
+      let a = 1;
+      const alphaCandidate = alphaPart ?? (comps[3] ?? null);
+      if(alphaCandidate !== null && alphaCandidate !== undefined){
+        const ap = parseCssNumber(String(alphaCandidate));
+        if(Number.isNaN(ap.value)) return null;
+        a = (ap.type === 'pct') ? clamp01(ap.value) : clamp01(ap.value);
+      }
+      return { h, s: clamp01(s), l: clamp01(l), a: clamp01(a) };
+    }
+
+    // -----------------------------
+    // OKLab / OKLCH (Björn Ottosson)
+    // References: https://bottosson.github.io/posts/oklab/
+    // -----------------------------
+    function rgbToOklab({r,g,b}){
+      // sRGB -> linear
+      const lr = srgbToLinear(r);
+      const lg = srgbToLinear(g);
+      const lb = srgbToLinear(b);
+      // linear sRGB -> LMS
+      const l = 0.4122214708*lr + 0.5363325363*lg + 0.0514459929*lb;
+      const m = 0.2119034982*lr + 0.6806995451*lg + 0.1073969566*lb;
+      const s = 0.0883024619*lr + 0.2817188376*lg + 0.6299787005*lb;
+      const l_ = Math.cbrt(l);
+      const m_ = Math.cbrt(m);
+      const s_ = Math.cbrt(s);
+      return {
+        L: 0.2104542553*l_ + 0.7936177850*m_ - 0.0040720468*s_,
+        a: 1.9779984951*l_ - 2.4285922050*m_ + 0.4505937099*s_,
+        b: 0.0259040371*l_ + 0.7827717662*m_ - 0.8086757660*s_,
+      };
+    }
+
+    function oklabToRgb({L,a,b}){
+      // OKLab -> LMS'
+      const l_ = L + 0.3963377774*a + 0.2158037573*b;
+      const m_ = L - 0.1055613458*a - 0.0638541728*b;
+      const s_ = L - 0.0894841775*a - 1.2914855480*b;
+      const l = l_*l_*l_;
+      const m = m_*m_*m_;
+      const s = s_*s_*s_;
+      // LMS -> linear sRGB
+      const lr =  4.0767416621*l - 3.3077115913*m + 0.2309699292*s;
+      const lg = -1.2684380046*l + 2.6097574011*m - 0.3413193965*s;
+      const lb = -0.0041960863*l - 0.7034186147*m + 1.7076147010*s;
+      // linear -> sRGB
+      const r = linearToSrgb(lr);
+      const g = linearToSrgb(lg);
+      const b2 = linearToSrgb(lb);
+      return { r, g, b: b2 };
+    }
+
+    function rgbToOklch({r,g,b,a}){
+      const lab = rgbToOklab({r,g,b});
+      const C = Math.sqrt(lab.a*lab.a + lab.b*lab.b);
+      let h = Math.atan2(lab.b, lab.a) * 180/Math.PI;
+      if(h < 0) h += 360;
+      return { L: lab.L, C, h, a: clamp01(a) };
+    }
+
+    function oklchToRgb({L,C,h,a}){
+      h = ((h % 360) + 360) % 360;
+      const hr = h * Math.PI/180;
+      const lab = { L, a: C*Math.cos(hr), b: C*Math.sin(hr) };
+      const rgb = oklabToRgb(lab);
+      return { r: rgb.r, g: rgb.g, b: rgb.b, a: clamp01(a) };
+    }
+
+    function parseOklchLike(str){
+      str = (str || '').trim();
+      if(!str) return null;
+      str = str.replace(/^oklch\(/i,'').replace(/\)$/,'').trim();
+      str = str.replace(/,/g,' ');
+      let alphaPart = null;
+      if(str.includes('/')){
+        const parts = str.split('/');
+        str = parts[0].trim();
+        alphaPart = parts[1].trim();
+      }
+      const comps = str.split(/\s+/).filter(Boolean);
+      if(comps.length < 3) return null;
+
+      const L = parseFloat(comps[0]);
+      const C = parseFloat(comps[1]);
+      const h = parseFloat(comps[2]);
+      if([L,C,h].some(Number.isNaN)) return null;
+
+      let a = 1;
+      const alphaCandidate = alphaPart ?? (comps[3] ?? null);
+      if(alphaCandidate !== null && alphaCandidate !== undefined){
+        const ap = parseCssNumber(String(alphaCandidate));
+        if(Number.isNaN(ap.value)) return null;
+        a = (ap.type === 'pct') ? clamp01(ap.value) : clamp01(ap.value);
+      }
+      return { L, C, h, a };
+    }
+
+    // -----------------------------
+    // Gamut check + clamp
+    // -----------------------------
+    function isInSrgbGamut({r,g,b}){
+      return r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
+    }
+
+    function clampRgb({r,g,b,a}){
+      return { r: clamp01(r), g: clamp01(g), b: clamp01(b), a: clamp01(a) };
+    }
+
+    // A simple (not perfect) gamut mapping for OKLCH -> sRGB:
+    // If out of gamut, reduce chroma until in gamut via binary search.
+    function oklchToRgbGamutMapped(oklch){
+      const rgb0 = oklchToRgb(oklch);
+      if(isInSrgbGamut(rgb0)) return { rgba: clampRgb(rgb0), clipped: false };
+
+      let lo = 0;
+      let hi = Math.max(0, oklch.C);
+      let best = null;
+
+      for(let i=0;i<24;i++){
+        const mid = (lo+hi)/2;
+        const cand = oklchToRgb({ ...oklch, C: mid });
+        if(isInSrgbGamut(cand)){
+          best = cand;
+          lo = mid;
+        }else{
+          hi = mid;
+        }
+      }
+
+      const rgba = clampRgb(best ?? rgb0);
+      return { rgba, clipped: true, mappedC: lo };
+    }
+
+    // -----------------------------
+    // Formatting
+    // -----------------------------
+    function formatRgba({r,g,b,a}){
+      const R = Math.round(clamp01(r)*255);
+      const G = Math.round(clamp01(g)*255);
+      const B = Math.round(clamp01(b)*255);
+      const A = round(clamp01(a), 3);
+      return `rgba(${R}, ${G}, ${B}, ${A})`;
+    }
+
+    function formatHslaFromRgba(rgba){
+      const hsl = rgbToHsl(rgba);
+      const h = Math.round(hsl.h);
+      const s = fmtPct(hsl.s);
+      const l = fmtPct(hsl.l);
+      const a = round(hsl.a, 3);
+      return `hsla(${h} ${s} ${l} / ${a})`;
+    }
+
+    function formatOklchFromRgba(rgba){
+      const o = rgbToOklch(rgba);
+      // Round nicely
+      const L = toFixedTrim(o.L, 4);
+      const C = toFixedTrim(o.C, 4);
+      const h = toFixedTrim(o.h, 2);
+      const a = toFixedTrim(o.a, 3);
+      return `oklch(${L} ${C} ${h} / ${a})`;
+    }
+
+    function formatHexFromRgba(rgba){
+      // include alpha only if not fully opaque
+      const withAlpha = Math.round(clamp01(rgba.a)*255) !== 255;
+      return rgbaToHex(rgba, withAlpha);
+    }
+
+    // -----------------------------
+    // State + UI
+    // -----------------------------
+    const els = {
+      swatch: document.getElementById('swatch'),
+      chipText: document.getElementById('chipText'),
+      picker: document.getElementById('picker'),
+      gamutWarn: document.getElementById('gamutWarn'),
+
+      hex: document.getElementById('hex'),
+      rgbText: document.getElementById('rgbText'),
+      hslText: document.getElementById('hslText'),
+      oklchText: document.getElementById('oklchText'),
+
+      btnApplyHex: document.getElementById('btnApplyHex'),
+      btnApplyRgb: document.getElementById('btnApplyRgb'),
+      btnApplyHsl: document.getElementById('btnApplyHsl'),
+      btnApplyOklch: document.getElementById('btnApplyOklch'),
+
+      btnCopyCss: document.getElementById('btnCopyCss'),
+      btnReset: document.getElementById('btnReset'),
+      btnFromPicker: document.getElementById('btnFromPicker'),
+    };
+
+    const copyButtons = Array.from(document.querySelectorAll('[data-copy]'));
+
+    let current = { r: 122/255, g: 162/255, b: 1, a: 1 };
+    let isUpdating = false;
+
+    function render({ showGamut=false, gamutMessage='' } = {}){
+      isUpdating = true;
+
+      const css = formatRgba(current);
+      document.documentElement.style.setProperty('--swatch', css);
+      els.chipText.textContent = css;
+      els.swatch.style.setProperty('--swatch', css);
+
+      const hexStr = formatHexFromRgba(current);
+      els.hex.value = hexStr;
+
+      const R = Math.round(clamp01(current.r)*255);
+      const G = Math.round(clamp01(current.g)*255);
+      const B = Math.round(clamp01(current.b)*255);
+      const A = round(clamp01(current.a), 3);
+      els.rgbText.value = `rgba(${R}, ${G}, ${B}, ${A})`;
+
+      els.hslText.value = formatHslaFromRgba(current);
+      els.oklchText.value = formatOklchFromRgba(current);
+
+      // Picker only supports RGB; ignore alpha.
+      els.picker.value = rgbaToHex({ ...current, a: 1 }, false);
+
+      if(showGamut){
+        els.gamutWarn.style.display = 'block';
+        els.gamutWarn.textContent = gamutMessage;
+      }else{
+        els.gamutWarn.style.display = 'none';
+        els.gamutWarn.textContent = '';
+      }
+
+      // Clear inline errors when rendering from a valid state
+      setError('hexErr', null);
+      setError('rgbErr', null);
+      setError('hslErr', null);
+      setError('oklchErr', null);
+
+      isUpdating = false;
+    }
+
+    function applyRgba(next, opts={}){
+      current = clampRgb(next);
+      render(opts);
+    }
+
+    // -----------------------------
+    // Apply handlers
+    // -----------------------------
+    function applyHex(){
+      const v = els.hex.value;
+      const rgba = parseHex(v);
+      if(!rgba){ setError('hexErr', 'Could not parse Hex. Try #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.'); return; }
+      applyRgba(rgba);
+      toast('Applied Hex');
+    }
+
+    function applyRgb(){
+      const v = els.rgbText.value;
+      const rgba = parseRgbLike(v);
+      if(!rgba){ setError('rgbErr', 'Could not parse RGB(A). Try: rgba(255, 0, 0, 0.5) or 255 0 0 / 50%.'); return; }
+      applyRgba(rgba);
+      toast('Applied RGB(A)');
+    }
+
+    function applyHsl(){
+      const v = els.hslText.value;
+      const hsl = parseHslLike(v);
+      if(!hsl){ setError('hslErr', 'Could not parse HSL(A). Try: hsl(220 100% 50% / 0.6).'); return; }
+      const rgba = hslToRgb(hsl);
+      applyRgba(rgba);
+      toast('Applied HSL(A)');
+    }
+
+    function applyOklch(){
+      const v = els.oklchText.value;
+      const ok = parseOklchLike(v);
+      if(!ok){ setError('oklchErr', 'Could not parse OKLCH. Try: oklch(0.8 0.1 140 / 80%).'); return; }
+
+      // Gamut map to sRGB
+      const { rgba, clipped, mappedC } = oklchToRgbGamutMapped(ok);
+      applyRgba(rgba, {
+        showGamut: clipped,
+        gamutMessage: clipped
+          ? `OKLCH → sRGB was out-of-gamut. Chroma was reduced from ${toFixedTrim(ok.C,4)} to ${toFixedTrim(mappedC ?? ok.C,4)} to fit sRGB.`
+          : ''
+      });
+      toast('Applied OKLCH');
+    }
+
+    // -----------------------------
+    // Live update on input (light debounce)
+    // -----------------------------
+    function debounce(fn, ms=180){
+      let t = null;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn(...args), ms);
+      };
+    }
+
+    const liveApplyHex = debounce(() => { if(!isUpdating) applyHex(); }, 200);
+    const liveApplyRgb = debounce(() => { if(!isUpdating) applyRgb(); }, 200);
+    const liveApplyHsl = debounce(() => { if(!isUpdating) applyHsl(); }, 220);
+    const liveApplyOklch = debounce(() => { if(!isUpdating) applyOklch(); }, 260);
+
+    els.hex.addEventListener('input', () => { setError('hexErr', null); liveApplyHex(); });
+    els.rgbText.addEventListener('input', () => { setError('rgbErr', null); liveApplyRgb(); });
+    els.hslText.addEventListener('input', () => { setError('hslErr', null); liveApplyHsl(); });
+    els.oklchText.addEventListener('input', () => { setError('oklchErr', null); liveApplyOklch(); });
+
+    els.btnApplyHex.addEventListener('click', applyHex);
+    els.btnApplyRgb.addEventListener('click', applyRgb);
+    els.btnApplyHsl.addEventListener('click', applyHsl);
+    els.btnApplyOklch.addEventListener('click', applyOklch);
+
+    els.btnCopyCss.addEventListener('click', () => copyToClipboard(formatRgba(current)));
+
+    copyButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-copy');
+        let text = '';
+        if(type === 'hex') text = els.hex.value;
+        if(type === 'rgba') text = els.rgbText.value;
+        if(type === 'hsla') text = els.hslText.value;
+        if(type === 'oklch') text = els.oklchText.value;
+        copyToClipboard(text);
+      });
+    });
+
+    els.btnReset.addEventListener('click', () => {
+      applyRgba({ r: 122/255, g: 162/255, b: 1, a: 1 });
+      toast('Reset');
+    });
+
+    els.btnFromPicker.addEventListener('click', () => {
+      const rgba = parseHex(els.picker.value);
+      if(rgba){ applyRgba({ ...rgba, a: current.a }); toast('Applied picker'); }
+    });
+
+    // Keyboard: Enter applies for focused field
+    ['hex','rgbText','hslText','oklchText'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter'){
+          if(id === 'hex') applyHex();
+          if(id === 'rgbText') applyRgb();
+          if(id === 'hslText') applyHsl();
+          if(id === 'oklchText') applyOklch();
+        }
+      });
+    });
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
