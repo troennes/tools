@@ -1,1 +1,381 @@
-Hello world
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tools</title>
+  <style>
+    :root{
+      --bg: #0b0d12;
+      --panel: #101522;
+      --panel2: #0f1420;
+      --text: #e7eaf0;
+      --muted: #a9b1c2;
+      --border: rgba(255,255,255,.10);
+      --border2: rgba(255,255,255,.14);
+      --shadow: 0 14px 45px rgba(0,0,0,.45);
+      --radius: 16px;
+      --radius2: 12px;
+      --focus: 0 0 0 3px rgba(98, 148, 255, .35);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      background:
+        radial-gradient(1000px 600px at 20% -10%, rgba(98,148,255,.20), transparent 55%),
+        radial-gradient(900px 520px at 100% 10%, rgba(255,110,199,.12), transparent 45%),
+        radial-gradient(900px 700px at 30% 120%, rgba(60,255,210,.10), transparent 55%),
+        var(--bg);
+      color: var(--text);
+    }
+    a{ color: inherit; text-decoration: none; }
+
+    .wrap{
+      max-width: 1024px;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+    h1{
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: .2px;
+      line-height: 1.1;
+    }
+    .sub{
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .searchbar{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: rgba(16,21,34,.60);
+      border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
+      backdrop-filter: blur(10px);
+      min-width: min(520px, 100%);
+      flex: 1 1 360px;
+    }
+    .searchbar .icon{
+      width: 18px;
+      height: 18px;
+      opacity: .85;
+      flex: 0 0 auto;
+    }
+    .searchbar input{
+      width: 100%;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .searchbar input::placeholder{ color: rgba(233,236,245,.55); }
+    .kbd{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(233,236,245,.75);
+      border: 1px solid var(--border2);
+      background: rgba(0,0,0,.18);
+      border-radius: 8px;
+      padding: 3px 8px;
+      flex: 0 0 auto;
+      user-select:none;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat( auto-fit, minmax(240px, 1fr) );
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .card{
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16,21,34,.78), rgba(16,21,34,.52));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transition: transform .14s ease, border-color .14s ease, background .14s ease;
+    }
+    .card:hover{
+      transform: translateY(-1px);
+      border-color: rgba(255,255,255,.16);
+      background: linear-gradient(180deg, rgba(18,26,44,.82), rgba(16,21,34,.52));
+    }
+
+    .card a{
+      display:block;
+      padding: 14px 14px 12px;
+      outline: none;
+    }
+    .card a:focus-visible{
+      border-radius: var(--radius);
+      box-shadow: var(--focus);
+    }
+
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .title{
+      font-weight: 650;
+      letter-spacing: .2px;
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .file{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(233,236,245,.72);
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,.14);
+      padding: 3px 8px;
+      border-radius: 999px;
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .desc{
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      min-height: 2.9em; /* keeps rows tidy */
+    }
+
+    .open{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 2px;
+    }
+    .hint{
+      font-size: 12px;
+      color: rgba(233,236,245,.62);
+    }
+    .arrow{
+      width: 18px;
+      height: 18px;
+      opacity: .9;
+      flex: 0 0 auto;
+      transition: transform .14s ease;
+    }
+    .card:hover .arrow{ transform: translateX(2px); }
+
+    .empty{
+      display:none;
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: var(--radius2);
+      border: 1px dashed rgba(255,255,255,.16);
+      color: rgba(233,236,245,.75);
+      background: rgba(0,0,0,.14);
+    }
+
+    footer{
+      margin-top: 22px;
+      color: rgba(233,236,245,.55);
+      font-size: 12px;
+      display:flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    footer code{
+      font-family: var(--mono);
+      font-size: 12px;
+      color: rgba(233,236,245,.70);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Tools collection</h1>
+        <div class="sub">Quick launcher for your local utilities.</div>
+      </div>
+
+      <div class="searchbar" role="search">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M16.2 16.2 21 21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        <input id="q" type="search" placeholder="Search tools… (e.g. color, css, html)" autocomplete="off" />
+        <span class="kbd" title="Keyboard shortcut">/</span>
+      </div>
+    </header>
+
+    <main>
+      <section class="grid" id="grid" aria-label="Tool links">
+        <article class="card" data-keywords="base64 encode decode encoder decoder">
+          <a href="./base64.html">
+            <div class="top">
+              <h2 class="title">Base 64 encoder/decoder</h2>
+              <span class="file">base64.html</span>
+            </div>
+            <p class="desc">Encode text/files to Base64, or decode Base64 back to original content.</p>
+            <div class="open">
+              <span class="hint">Open tool</span>
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </a>
+        </article>
+
+        <article class="card" data-keywords="color mix css color-mix playground">
+          <a href="./color-mix.html">
+            <div class="top">
+              <h2 class="title">color-mix() playground</h2>
+              <span class="file">color-mix.html</span>
+            </div>
+            <p class="desc">Experiment with CSS <code style="font-family:var(--mono)">color-mix()</code> and inspect computed results.</p>
+            <div class="open">
+              <span class="hint">Open tool</span>
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </a>
+        </article>
+
+        <article class="card" data-keywords="color converter hex rgb rgba hsl hsla oklch convert">
+          <a href="./color_converter.html">
+            <div class="top">
+              <h2 class="title">Color converter</h2>
+              <span class="file">color_converter.html</span>
+            </div>
+            <p class="desc">Convert between Hex, RGB(A), HSL(A), and OKLCH formats.</p>
+            <div class="open">
+              <span class="hint">Open tool</span>
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </a>
+        </article>
+
+        <article class="card" data-keywords="html entities entity encoder converter escape">
+          <a href="./html_entities.html">
+            <div class="top">
+              <h2 class="title">HTML entity converter</h2>
+              <span class="file">html_entities.html</span>
+            </div>
+            <p class="desc">Convert text into safe HTML entities for pasting into <code style="font-family:var(--mono)">&lt;pre&gt;&lt;code&gt;</code>.</p>
+            <div class="open">
+              <span class="hint">Open tool</span>
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </a>
+        </article>
+
+        <article class="card" data-keywords="css minify minifier compress optimize">
+          <a href="./minify_css.html">
+            <div class="top">
+              <h2 class="title">CSS minifier</h2>
+              <span class="file">minify_css.html</span>
+            </div>
+            <p class="desc">Minify CSS by removing whitespace/comments for smaller, cleaner output.</p>
+            <div class="open">
+              <span class="hint">Open tool</span>
+              <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M5 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <path d="M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </a>
+        </article>
+      </section>
+
+      <div class="empty" id="empty">
+        No tools match your search. Try a different keyword.
+      </div>
+    </main>
+
+    <footer>
+      <div>Tip: press <code>/</code> to jump to search, <code>Esc</code> to clear.</div>
+      <div><code>index.html</code> • local dashboard</div>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const input = $("q");
+    const grid = $("grid");
+    const empty = $("empty");
+    const cards = Array.from(grid.querySelectorAll(".card"));
+
+    function normalize(s){ return (s || "").toLowerCase().trim(); }
+
+    function applyFilter(){
+      const q = normalize(input.value);
+      let visible = 0;
+
+      for (const card of cards){
+        const text = normalize(card.textContent);
+        const kw = normalize(card.getAttribute("data-keywords"));
+        const match = !q || text.includes(q) || kw.includes(q);
+
+        card.style.display = match ? "" : "none";
+        if (match) visible++;
+      }
+
+      empty.style.display = visible ? "none" : "block";
+    }
+
+    input.addEventListener("input", applyFilter);
+
+    // Keyboard shortcuts: "/" focuses search, Esc clears.
+    window.addEventListener("keydown", (e) => {
+      const isTypingInInput =
+        document.activeElement &&
+        (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA");
+
+      if (e.key === "/" && !isTypingInInput){
+        e.preventDefault();
+        input.focus();
+      } else if (e.key === "Escape") {
+        if (document.activeElement === input || input.value) {
+          input.value = "";
+          applyFilter();
+          input.blur();
+        }
+      }
+    });
+
+    applyFilter();
+  </script>
+</body>
+</html>
