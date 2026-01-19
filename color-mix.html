@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>color-mix() Lab (CSS)</title>
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --panel:#121a26;
+      --panel2:#0f1622;
+      --text:#e7eefc;
+      --muted:#aab6d3;
+      --border:rgba(255,255,255,.12);
+      --focus:rgba(120,170,255,.35);
+      --good:#8ef0b0;
+      --bad:#ff8b8b;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 800px at 10% 0%, rgba(85,140,255,.25), transparent 55%),
+                  radial-gradient(900px 700px at 90% 10%, rgba(90,255,190,.15), transparent 55%),
+                  radial-gradient(900px 700px at 35% 90%, rgba(255,120,210,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .app{
+      width:min(1100px, 100%);
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:18px;
+      min-width: 0;
+    }
+    .card{ min-width: 0; }
+    .previewWrap{ min-width: 0; }
+    .preview{ min-width: 0; }
+    .swatches{ min-width: 0; }
+    .swatch{ min-width: 0; }
+    @media (max-width: 900px){
+      .app{grid-template-columns:1fr}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    header{
+      padding:18px 18px 0 18px;
+    }
+    h1{
+      margin:0 0 6px 0;
+      font-size:20px;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:0 0 12px 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+    .body{
+      padding:16px 18px 18px 18px;
+      display:grid;
+      gap:14px;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    @media (max-width: 520px){
+      .row{grid-template-columns:1fr}
+    }
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin:0 0 6px 0;
+    }
+    input[type="text"], select, textarea{
+      width:100%;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      padding:10px 12px;
+      outline:none;
+      transition:border-color .12s, box-shadow .12s;
+      font-size:14px;
+    }
+    textarea{
+      resize:vertical;
+      min-height:70px;
+      font-family:var(--mono);
+      line-height:1.35;
+    }
+    input[type="text"]:focus, select:focus, textarea:focus{
+      border-color: rgba(120,170,255,.55);
+      box-shadow: 0 0 0 4px var(--focus);
+    }
+    .inline{
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+    .inline .grow{flex:1}
+    input[type="color"]{
+      width:46px;
+      height:42px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: transparent;
+      padding:0;
+      overflow:hidden;
+      cursor:pointer;
+    }
+    input[type="range"]{
+      width:100%;
+    }
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .btns{display:flex; gap:10px; flex-wrap:wrap}
+    button{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition: transform .06s ease, border-color .12s, background .12s;
+      font-size:14px;
+    }
+    button:hover{border-color: rgba(255,255,255,.22); background: rgba(0,0,0,.32)}
+    button:active{transform: translateY(1px)}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.22);
+      color:var(--muted);
+      font-size:12px;
+      width:max-content;
+    }
+    .dot{
+      width:10px;height:10px;border-radius:50%;
+      background: var(--bad);
+      box-shadow: 0 0 0 3px rgba(255,255,255,.06) inset;
+    }
+    .dot.ok{background: var(--good)}
+    .previewWrap{
+      padding:18px;
+      display:grid;
+      gap:12px;
+    }
+    .preview{
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.18);
+      border-radius:var(--radius);
+      overflow:hidden;
+    }
+    .swatches{
+      display:grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap:10px;
+      padding:12px;
+    }
+    .swatch{
+      border-radius:14px;
+      border:1px solid var(--border);
+      overflow:hidden;
+      min-height:110px;
+      display:flex;
+      flex-direction:column;
+    }
+    .swatch .color{
+      flex:1;
+      min-height:72px;
+    }
+    .swatch .meta{
+      padding:10px;
+      background: rgba(0,0,0,.22);
+      border-top:1px solid var(--border);
+      font-family:var(--mono);
+      font-size:12px;
+      line-height:1.25;
+      color:rgba(231,238,252,.92);
+      word-break:break-word;
+      white-space: pre-line;
+    }
+    .codeBox{
+      border:1px dashed rgba(255,255,255,.18);
+      background: rgba(0,0,0,.20);
+      border-radius:14px;
+      padding:12px;
+      font-family:var(--mono);
+      font-size:13px;
+      line-height:1.35;
+      overflow:auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-width: 100%;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+      margin-top:4px;
+    }
+    .footer{
+      padding:0 18px 18px 18px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.4;
+    }
+    .kbd{
+      font-family:var(--mono);
+      padding:2px 6px;
+      border:1px solid var(--border);
+      border-bottom-color: rgba(255,255,255,.22);
+      border-radius:8px;
+      background: rgba(0,0,0,.2);
+      color:rgba(231,238,252,.9);
+      font-size:12px;
+    }
+    .danger{
+      color: var(--bad);
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="card" aria-label="Controls">
+      <header>
+        <h1>color-mix() Lab</h1>
+        <p class="sub">
+          Build a <span class="kbd">color-mix()</span> expression, preview the result, and copy the CSS.
+          The preview uses your browser’s native CSS engine, so support depends on the browser.
+        </p>
+      </header>
+
+      <div class="body">
+        <div class="row">
+          <div>
+            <label for="c1">Color A</label>
+            <div class="inline">
+              <input id="c1" class="grow" type="text" value="#ff0066" spellcheck="false" />
+              <input id="c1picker" type="color" value="#ff0066" aria-label="Pick Color A" />
+            </div>
+            <div class="hint">Any CSS color: <span class="kbd">#rgb</span>, <span class="kbd">hsl(...)</span>, <span class="kbd">oklch(...)</span>, named colors, etc.</div>
+          </div>
+          <div>
+            <label for="c2">Color B</label>
+            <div class="inline">
+              <input id="c2" class="grow" type="text" value="#00d4ff" spellcheck="false" />
+              <input id="c2picker" type="color" value="#00d4ff" aria-label="Pick Color B" />
+            </div>
+            <div class="hint">Tip: try <span class="kbd">color(display-p3 1 0.5 0)</span> if your browser supports it.</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="space">Interpolation color space</label>
+            <select id="space">
+              <option value="srgb">srgb (default)</option>
+              <option value="srgb-linear">srgb-linear</option>
+              <option value="hsl">hsl</option>
+              <option value="hwb">hwb</option>
+              <option value="lab">lab</option>
+              <option value="lch">lch</option>
+              <option value="oklab">oklab</option>
+              <option value="oklch">oklch</option>
+              <option value="xyz">xyz</option>
+              <option value="xyz-d50">xyz-d50</option>
+              <option value="xyz-d65">xyz-d65</option>
+            </select>
+            <div class="hint">Different spaces can shift hue/lightness and produce very different blends.</div>
+          </div>
+
+          <div>
+            <label for="hue">Hue interpolation</label>
+            <select id="hue">
+              <option value="">(default)</option>
+              <option value="shorter">shorter</option>
+              <option value="longer">longer</option>
+              <option value="increasing">increasing</option>
+              <option value="decreasing">decreasing</option>
+            </select>
+            <div class="hint">Only applies to hue-based spaces (like HSL/LCH/OKLCH).</div>
+          </div>
+        </div>
+
+        <div>
+          <label for="mix">Mix ratio (A %)</label>
+          <div class="inline">
+            <input id="mix" type="range" min="0" max="100" step="1" value="50" class="grow" />
+            <input id="mixNum" type="text" value="50" inputmode="numeric" style="width:90px;text-align:center" aria-label="Mix ratio percentage for color A" />
+          </div>
+          <div class="hint">Color B uses the remaining percentage by default.</div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="fallback">Fallback (optional)</label>Fallback (optional)</label>
+            <select id="fallback">
+              <option value="">none</option>
+              <option value="var">Use CSS var()</option>
+              <option value="@supports">Generate @supports block</option>
+            </select>
+            <div class="hint">Helpful if you need a safe fallback for older browsers.</div>
+          </div>
+        </div>
+
+        <div>
+          <label for="expr">Expression (editable)</label>
+          <textarea id="expr" spellcheck="false"></textarea>
+          <div class="hint">
+            You can edit the expression directly. Press <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to re-evaluate.
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="copy">Copy CSS</button>
+          <button id="copyValue">Copy computed color</button>
+          <button id="swap">Swap A/B</button>
+          <button id="random">Randomize</button>
+        </div>
+
+        <div class="pill" role="status" aria-live="polite">
+          <span class="dot" id="supportDot" aria-hidden="true"></span>
+          <span id="supportText">Checking browser support…</span>
+        </div>
+      </div>
+
+      <div class="footer">
+        Notes:
+        <ul>
+          <li>If your browser doesn’t support <span class="kbd">color-mix()</span>, the computed color may be blank or unchanged.</li>
+          <li>The computed value shown is what the browser resolves for <span class="kbd">background-color</span>.</li>
+          <li>To test feature support in CSS: <span class="kbd">@supports (color: color-mix(in srgb, red, blue)) { … }</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Preview">
+      <div class="previewWrap">
+        <div class="preview" id="preview">
+          <div class="swatches">
+            <div class="swatch">
+              <div class="color" id="swA"></div>
+              <div class="meta" id="metaA"></div>
+            </div>
+            <div class="swatch">
+              <div class="color" id="swMix"></div>
+              <div class="meta" id="metaMix"></div>
+            </div>
+            <div class="swatch">
+              <div class="color" id="swB"></div>
+              <div class="meta" id="metaB"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="small" style="margin-bottom:8px;">CSS you can paste</div>
+          <pre class="codeBox" id="cssOut"></pre>
+          <div class="hint" id="warn"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<script>
+(function(){
+  const $ = (id)=>document.getElementById(id);
+
+  const c1 = $("c1");
+  const c2 = $("c2");
+  const c1p = $("c1picker");
+  const c2p = $("c2picker");
+  const space = $("space");
+  const hue = $("hue");
+  const mix = $("mix");
+  const mixNum = $("mixNum");
+  const expr = $("expr");
+  const fallback = $("fallback");
+
+  const swA = $("swA");
+  const swB = $("swB");
+  const swMix = $("swMix");
+  const metaA = $("metaA");
+  const metaB = $("metaB");
+  const metaMix = $("metaMix");
+
+  const cssOut = $("cssOut");
+  const warn = $("warn");
+
+  const supportDot = $("supportDot");
+  const supportText = $("supportText");
+
+  const probe = document.createElement("div");
+  probe.style.display = "none";
+  document.body.appendChild(probe);
+
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function looksHex6(v){
+    return /^#([0-9a-f]{6})$/i.test(v.trim());
+  }
+
+  function trySyncPickerFromText(textEl, pickerEl){
+    const v = textEl.value.trim();
+    if(looksHex6(v)) pickerEl.value = v;
+  }
+
+  function randomHex(){
+    const n = Math.floor(Math.random()*0xFFFFFF);
+    return "#" + n.toString(16).padStart(6,"0");
+  }
+
+  function buildExpression(){
+    const aPct = clamp(parseInt(mix.value,10) || 0, 0, 100);
+    const bPct = 100 - aPct;
+
+    const sp = space.value;
+    const h = hue.value ? (" " + hue.value + " hue") : "";
+
+    const a = c1.value.trim() || "transparent";
+    const b = c2.value.trim() || "transparent";
+
+    const aStop = aPct === 50 ? a : `${a} ${aPct}%`;
+    const bStop = bPct === 50 ? b : `${b} ${bPct}%`;
+    return `color-mix(in ${sp}${h}, ${aStop}, ${bStop})`;
+  }
+
+  function setExpressionFromControls(){
+    expr.value = buildExpression();
+  }
+
+  function supportsColorMix(){
+    const test = "color-mix(in srgb, red, blue)";
+    try{
+      if (window.CSS && CSS.supports) {
+        return CSS.supports("color", test);
+      }
+    }catch(_){}
+    probe.style.color = test;
+    return probe.style.color !== "";
+  }
+
+  function computeColor(expression){
+    const el = probe;
+    el.style.backgroundColor = "";
+    el.style.backgroundColor = expression;
+    const cs = getComputedStyle(el).backgroundColor;
+    return { applied: el.style.backgroundColor !== "", computed: cs };
+  }
+
+  function updateSupportUI(ok){
+    supportDot.classList.toggle("ok", ok);
+    supportText.textContent = ok
+      ? "Your browser supports color-mix(). Preview should be accurate."
+      : "Your browser may not support color-mix(). Preview might not work.";
+  }
+
+  function generateCssSnippet(expression, computed){
+    const mode = fallback.value;
+
+    if(!mode){
+      return `background-color: ${expression};`;
+    }
+    if(mode === "var"){
+      return [
+        `--mixed: ${expression};`,
+        `background-color: var(--mixed, ${computed || "rebeccapurple"});`
+      ].join("\n");
+    }
+    return [
+      `background-color: ${computed || "rebeccapurple"};`,
+      ``,
+      `@supports (color: ${expression}) {`,
+      `  background-color: ${expression};`,
+      `}`
+    ].join("\n");
+  }
+
+  function setSwatch(el, value){
+    el.style.background = value;
+  }
+
+  function update(){
+    const aPct = clamp(parseInt(mix.value,10) || 0, 0, 100);
+    mixNum.value = String(aPct);
+
+    trySyncPickerFromText(c1, c1p);
+    trySyncPickerFromText(c2, c2p);
+
+    if(!expr.value.trim()){
+      setExpressionFromControls();
+    }
+
+    setSwatch(swA, c1.value.trim() || "transparent");
+    setSwatch(swB, c2.value.trim() || "transparent");
+
+    const expression = expr.value.trim();
+    const { applied, computed } = computeColor(expression);
+
+    setSwatch(swMix, expression);
+
+    metaA.textContent = `A\n${c1.value.trim() || "(empty)"}`;
+    metaB.textContent = `B\n${c2.value.trim() || "(empty)"}`;
+    metaMix.textContent = `mix\n${computed || "(uncomputed)"}`;
+
+    const css = generateCssSnippet(expression, computed);
+    cssOut.textContent = css;
+
+    const ok = supportsColorMix();
+    updateSupportUI(ok);
+
+    warn.textContent = "";
+    warn.className = "hint";
+
+    if(!ok){
+      warn.textContent = "Your browser doesn’t report support for color-mix(). The swatch might not render correctly here, but the CSS output is still valid for supporting browsers.";
+    } else if(!applied){
+      warn.textContent = "The current expression might be invalid. Check syntax (commas, percentages, colorspace name).";
+      warn.className = "hint danger";
+    }
+  }
+
+  function onAnyInput(){
+    setExpressionFromControls();
+    update();
+  }
+
+  [c1, c2, space, hue, mix, fallback].forEach(el=>{
+    el.addEventListener("input", onAnyInput);
+    el.addEventListener("change", onAnyInput);
+  });
+
+  c1p.addEventListener("input", ()=>{ c1.value = c1p.value; onAnyInput(); });
+  c2p.addEventListener("input", ()=>{ c2.value = c2p.value; onAnyInput(); });
+
+  mixNum.addEventListener("input", ()=>{
+    const v = clamp(parseInt(mixNum.value,10) || 0, 0, 100);
+    mix.value = String(v);
+    onAnyInput();
+  });
+
+  expr.addEventListener("input", ()=> update());
+  expr.addEventListener("keydown", (e)=>{
+    if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+      e.preventDefault();
+      update();
+    }
+  });
+
+  $("swap").addEventListener("click", ()=>{
+    const t = c1.value; c1.value = c2.value; c2.value = t;
+    const tp = c1p.value; c1p.value = c2p.value; c2p.value = tp;
+    onAnyInput();
+  });
+
+  $("random").addEventListener("click", ()=>{
+    c1.value = randomHex();
+    c2.value = randomHex();
+    c1p.value = looksHex6(c1.value) ? c1.value : c1p.value;
+    c2p.value = looksHex6(c2.value) ? c2.value : c2p.value;
+    onAnyInput();
+  });
+
+  async function copyText(text){
+    try{
+      await navigator.clipboard.writeText(text);
+      return true;
+    }catch(_){
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      let ok = false;
+      try{ ok = document.execCommand("copy"); }catch(_e){}
+      ta.remove();
+      return ok;
+    }
+  }
+
+  $("copy").addEventListener("click", async ()=>{
+    const ok = await copyText(cssOut.textContent);
+    supportText.textContent = ok ? "Copied CSS to clipboard." : "Couldn’t copy automatically (try selecting and copying).";
+    setTimeout(()=>updateSupportUI(supportsColorMix()), 1200);
+  });
+
+  $("copyValue").addEventListener("click", async ()=>{
+    const expression = expr.value.trim();
+    const { computed } = computeColor(expression);
+    const ok = await copyText(computed || "");
+    supportText.textContent = ok ? "Copied computed color to clipboard." : "Couldn’t copy automatically.";
+    setTimeout(()=>updateSupportUI(supportsColorMix()), 1200);
+  });
+
+  setExpressionFromControls();
+  update();
+})();
+</script>
+</body>
+</html>
