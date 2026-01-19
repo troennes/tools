@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HTML Entity Encoder (for &lt;pre&gt;&lt;code&gt;)</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+      line-height: 1.35;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    header { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+    h1 { font-size: 20px; margin: 0; }
+    .sub { opacity: 0.8; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      border: 1px solid rgba(127,127,127,0.35);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .panel h2 { font-size: 14px; margin: 0 0 8px; opacity: 0.9; }
+    textarea {
+      width: 100%;
+      min-height: 340px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(127,127,127,0.35);
+      box-sizing: border-box;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      margin: 12px 0 0;
+      padding-top: 10px;
+      border-top: 1px solid rgba(127,127,127,0.2);
+    }
+    label { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; }
+    input[type="checkbox"], input[type="radio"] { transform: translateY(1px); }
+    .btns { margin-left: auto; display: inline-flex; gap: 10px; }
+    button {
+      border: 1px solid rgba(127,127,127,0.35);
+      background: transparent;
+      padding: 8px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button:hover { filter: brightness(1.08); }
+    .note {
+      margin-top: 12px;
+      font-size: 13px;
+      opacity: 0.85;
+    }
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(127,127,127,0.35);
+      background: rgba(30,30,30,0.9);
+      color: white;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+    .toast.show { opacity: 1; }
+    .tiny { font-size: 12px; opacity: 0.75; }
+    .mode {
+      display: inline-flex; gap: 10px; align-items: center;
+      padding: 6px 10px; border-radius: 999px;
+      border: 1px solid rgba(127,127,127,0.25);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>HTML Entity Encoder</h1>
+      <div class="sub">Paste code → get HTML-safe text for <code>&lt;pre&gt;&lt;code&gt;</code></div>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Input (raw text / code)</h2>
+        <textarea id="in" placeholder="Paste code here..."></textarea>
+      </section>
+
+      <section class="panel">
+        <h2>Output (HTML-escaped)</h2>
+        <textarea id="out" readonly placeholder="Escaped output appears here..."></textarea>
+
+        <div class="controls">
+          <span class="mode" title="Default is Minimal: only escape &, <, >">
+            <strong class="tiny">Mode:</strong>
+            <label><input type="radio" name="mode" value="minimal" checked> Minimal</label>
+            <label><input type="radio" name="mode" value="attribute"> Attribute-safe</label>
+            <label><input type="radio" name="mode" value="full"> Full</label>
+          </span>
+
+          <label title="If input already contains &amp;lt; etc, keep those entities as-is">
+            <input type="checkbox" id="preserveEntities">
+            Don’t double-encode existing entities
+          </label>
+
+          <label title="Convert non-ASCII characters (e.g. emoji, accents) into numeric entities">
+            <input type="checkbox" id="nonAscii">
+            Escape non-ASCII
+          </label>
+
+          <label title="Use hex (e.g. &#x1F600;) instead of decimal (e.g. &#128512;) for numeric entities">
+            <input type="checkbox" id="hex" checked>
+            Hex numeric
+          </label>
+
+          <div class="btns">
+            <button id="copyBtn" type="button">Copy output</button>
+            <button id="swapBtn" type="button" title="Move output back into input">Swap</button>
+            <button id="clearBtn" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div class="note">
+          Default (<em>Minimal</em>) escapes only <code>&amp;</code>, <code>&lt;</code>, <code>&gt;</code> — enough to prevent pasted code from affecting HTML.
+          Use <em>Attribute-safe</em> if you plan to put the result inside an HTML attribute (also escapes quotes).
+          Use <em>Full</em> to additionally escape apostrophes.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const $in = document.getElementById('in');
+    const $out = document.getElementById('out');
+    const $preserve = document.getElementById('preserveEntities');
+    const $nonAscii = document.getElementById('nonAscii');
+    const $hex = document.getElementById('hex');
+    const $toast = document.getElementById('toast');
+
+    const modeRadios = Array.from(document.querySelectorAll('input[name="mode"]'));
+
+    function getMode() {
+      return modeRadios.find(r => r.checked)?.value || 'minimal';
+    }
+
+    function showToast(msg) {
+      $toast.textContent = msg;
+      $toast.classList.add('show');
+      window.clearTimeout(showToast._t);
+      showToast._t = window.setTimeout(() => $toast.classList.remove('show'), 1200);
+    }
+
+    // Detects already-encoded entities like &lt; &amp; &#123; &#x1F600;
+    // Not perfect for all edge cases, but good enough to avoid common double-encoding.
+    const ENTITY_RE = /^&(?:[a-zA-Z][a-zA-Z0-9]+|#\d+|#x[0-9a-fA-F]+);/;
+
+    function escapeCore(str, { escapeQuotes, escapeApos, preserveEntities }) {
+      let out = '';
+      for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+
+        // Preserve entities if enabled and we see '&'
+        if (preserveEntities && ch === '&') {
+          const rest = str.slice(i);
+          const m = rest.match(ENTITY_RE);
+          if (m) {
+            out += m[0];
+            i += m[0].length - 1;
+            continue;
+          }
+        }
+
+        if (ch === '&') out += '&amp;';
+        else if (ch === '<') out += '&lt;';
+        else if (ch === '>') out += '&gt;';
+        else if (escapeQuotes && ch === '"') out += '&quot;';
+        else if (escapeApos && ch === "'") out += '&#39;';
+        else out += ch;
+      }
+      return out;
+    }
+
+    function escapeNonAscii(str, { hex }) {
+      let out = '';
+      // Iterate by code point (handles emoji etc.)
+      for (const cp of str) {
+        const code = cp.codePointAt(0);
+        // Keep common ASCII and newlines/tabs as-is
+        if (code <= 0x7E) {
+          out += cp;
+        } else {
+          out += hex ? '&#x' + code.toString(16).toUpperCase() + ';'
+                     : '&#' + String(code) + ';';
+        }
+      }
+      return out;
+    }
+
+    function encode(input) {
+      const mode = getMode();
+      const preserveEntities = $preserve.checked;
+
+      const escapeQuotes = (mode === 'attribute' || mode === 'full');
+      const escapeApos = (mode === 'full');
+
+      let s = escapeCore(input, { escapeQuotes, escapeApos, preserveEntities });
+
+      if ($nonAscii.checked) {
+        s = escapeNonAscii(s, { hex: $hex.checked });
+      }
+
+      return s;
+    }
+
+    function update() {
+      $out.value = encode($in.value);
+    }
+
+    // Events
+    $in.addEventListener('input', update);
+    modeRadios.forEach(r => r.addEventListener('change', update));
+    [$preserve, $nonAscii, $hex].forEach(el => el.addEventListener('change', update));
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText($out.value);
+        showToast('Copied!');
+      } catch {
+        // Fallback
+        $out.focus();
+        $out.select();
+        document.execCommand('copy');
+        showToast('Copied (fallback)!');
+      }
+    });
+
+    document.getElementById('swapBtn').addEventListener('click', () => {
+      $in.value = $out.value;
+      update();
+      showToast('Swapped!');
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', () => {
+      $in.value = '';
+      update();
+      $in.focus();
+      showToast('Cleared');
+    });
+
+    // Initial render
+    update();
+  </script>
+</body>
+</html>
