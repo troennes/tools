@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Animal Facts Ipsum (Wikipedia-style)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#101a33;
+      --panel2:#0f1730;
+      --text:#e9eefc;
+      --muted:#aeb9de;
+      --border:rgba(255,255,255,.12);
+      --accent:#7aa8ff;
+      --accent2:#6ef0c2;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 600px at 15% 10%, rgba(122,168,255,.25), transparent 60%),
+                  radial-gradient(900px 500px at 85% 20%, rgba(110,240,194,.18), transparent 65%),
+                  linear-gradient(180deg, #070b16, var(--bg));
+      color:var(--text);
+      min-height:100vh;
+      padding:28px;
+    }
+    header{
+      max-width:1100px;
+      margin:0 auto 18px;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:16px;
+    }
+    h1{
+      margin:0;
+      font-weight:750;
+      letter-spacing:-0.02em;
+      font-size:22px;
+      line-height:1.15;
+    }
+    .sub{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:13px;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border:1px solid var(--border);
+      background: rgba(16,26,51,.55);
+      border-radius:999px;
+      box-shadow: 0 1px 0 rgba(255,255,255,.06) inset;
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+    .pill b{ color:var(--text); font-weight:650; }
+
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns: 380px 1fr;
+      gap:16px;
+    }
+    @media (max-width: 980px){
+      .wrap{ grid-template-columns: 1fr; }
+      header{ align-items:flex-start; }
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(16,26,51,.75), rgba(12,18,40,.75));
+      border-radius:16px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .inner{ padding:14px; }
+    .card h2{
+      margin:0 0 10px;
+      font-size:13px;
+      color:var(--muted);
+      font-weight:700;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+    }
+
+    .row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    label{ display:block; font-size:13px; color:var(--text); font-weight:650; }
+    .hint{ font-size:12px; color:var(--muted); margin-top:4px; }
+
+    input[type="range"]{ width:100%; }
+    .kv{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:12px 0;
+      padding:10px;
+      background: rgba(15,23,48,.65);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+    }
+    .kv .v{
+      margin-left:auto;
+      font-variant-numeric: tabular-nums;
+      padding:4px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      font-size:12px;
+    }
+
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    button{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(122,168,255,.15);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:700;
+      letter-spacing:.01em;
+      transition: transform .06s ease, background .15s ease, border-color .15s ease;
+    }
+    button:hover{ background: rgba(122,168,255,.22); border-color: rgba(255,255,255,.22); }
+    button:active{ transform: translateY(1px); }
+    button.secondary{ background: rgba(110,240,194,.12); }
+    button.secondary:hover{ background: rgba(110,240,194,.18); }
+    button.ghost{ background: rgba(255,255,255,.06); }
+    button.ghost:hover{ background: rgba(255,255,255,.10); }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .select{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px;
+      background: rgba(15,23,48,.65);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+    }
+    select, input[type="text"]{
+      width:100%;
+      padding:10px 10px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.20);
+      color: var(--text);
+      outline:none;
+    }
+    select:focus, input[type="text"]:focus{ border-color: rgba(122,168,255,.55); box-shadow: 0 0 0 3px rgba(122,168,255,.18); }
+
+    .out{
+      display:flex;
+      flex-direction:column;
+      height:100%;
+      min-height:520px;
+    }
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      background: rgba(16,26,51,.55);
+    }
+    .toolbar .left{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: var(--muted);
+      font-size:12px;
+    }
+    .badge b{ color:var(--text); font-weight:700; }
+    .toolbar .right{ display:flex; gap:8px; align-items:center; }
+
+    textarea{
+      flex:1;
+      width:100%;
+      resize:none;
+      padding:14px;
+      border:0;
+      outline:none;
+      color: var(--text);
+      background: linear-gradient(180deg, rgba(10,15,33,.35), rgba(10,15,33,.25));
+      font-size:14px;
+      line-height:1.55;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .note{
+      padding:12px 14px;
+      border-top:1px solid var(--border);
+      background: rgba(16,26,51,.35);
+      color: var(--muted);
+      font-size:12px;
+    }
+    a{ color: var(--accent); text-decoration:none; }
+    a:hover{ text-decoration:underline; }
+
+    .tiny{
+      font-size:11px;
+      color: rgba(174,185,222,.8);
+      line-height:1.35;
+      margin-top:10px;
+    }
+    .status{
+      font-size:12px;
+      color: var(--muted);
+      margin-top:10px;
+      min-height:16px;
+    }
+    .status.ok{ color: rgba(110,240,194,.85); }
+    .status.bad{ color: rgba(255,140,140,.9); }
+
+    .divider{ height:1px; background: rgba(255,255,255,.10); margin:10px 0; }
+
+    .checkbox{
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      padding:10px;
+      background: rgba(15,23,48,.65);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:12px;
+    }
+    .checkbox input{ margin-top:2px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Animal Facts Ipsum</h1>
+      <div class="sub">Generate readable filler text from short, Wikipedia-style animal fact sentences (offline dataset; no live scraping).</div>
+    </div>
+    <div class="pill" title="This tool uses a built-in fact bank inspired by typical Wikipedia animal summaries.">
+      <span>Source style:</span> <b>Wikipedia-like</b>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card">
+      <div class="inner">
+        <h2>Settings</h2>
+
+        <div class="select" title="Pick a topic seed (affects which fact set is preferred).">
+          <label for="seed" style="min-width:120px">Animal seed</label>
+          <select id="seed">
+            <option value="mixed">Mixed</option>
+            <option value="penguin">Penguin</option>
+            <option value="octopus">Octopus</option>
+            <option value="elephant">Elephant</option>
+            <option value="wolf">Wolf</option>
+            <option value="honeybee">Honey bee</option>
+            <option value="axolotl">Axolotl</option>
+            <option value="red_panda">Red panda</option>
+            <option value="snow_leopard">Snow leopard</option>
+            <option value="blue_whale">Blue whale</option>
+          </select>
+        </div>
+
+        <div class="kv">
+          <div style="flex:1">
+            <div class="row"><label for="paras">Paragraphs</label><span class="v" id="parasVal">3</span></div>
+            <input id="paras" type="range" min="1" max="12" value="3" />
+            <div class="hint">How many paragraphs to generate.</div>
+          </div>
+        </div>
+
+        <div class="kv">
+          <div style="flex:1">
+            <div class="row"><label for="sents">Sentences per paragraph</label><span class="v" id="sentsVal">5</span></div>
+            <input id="sents" type="range" min="1" max="14" value="5" />
+            <div class="hint">Controls density and overall length.</div>
+          </div>
+        </div>
+
+        <div class="checkbox" title="Include a short opening sentence with a definition-like tone.">
+          <input id="lead" type="checkbox" checked />
+          <div>
+            <label for="lead" style="margin:0">Add a Wikipedia-style lead sentence</label>
+            <div class="hint">Adds one extra sentence at the start of the first paragraph.</div>
+          </div>
+        </div>
+
+        <div class="checkbox" title="Sprinkles in dates, Latin names, and classification phrases more often.">
+          <input id="techy" type="checkbox" />
+          <div>
+            <label for="techy" style="margin:0">More taxonomy/technical flavor</label>
+            <div class="hint">Slightly more scientific wording and occasional parentheticals.</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="controls">
+          <button id="gen">Generate</button>
+          <button class="secondary" id="copy">Copy</button>
+          <button class="ghost" id="download">Download .txt</button>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <div class="tiny">
+          Tip: paste into <code>&lt;pre&gt;&lt;code&gt;</code> blocks, docs, or mockups. This generator uses a built-in pool of concise animal facts written in a Wikipedia-like style, but it is not live Wikipedia content.
+        </div>
+      </div>
+    </section>
+
+    <section class="card out">
+      <div class="toolbar">
+        <div class="left">
+          <div class="badge"><b id="countP">3</b> paragraphs</div>
+          <div class="badge"><b id="countS">15</b> sentences</div>
+          <div class="badge" title="Approximate word count"><b id="countW">—</b> words</div>
+        </div>
+        <div class="right">
+          <button class="ghost" id="selectAll" title="Select all text">Select</button>
+          <button class="ghost" id="clear" title="Clear output">Clear</button>
+        </div>
+      </div>
+      <textarea id="out" spellcheck="false" placeholder="Click Generate…"></textarea>
+      <div class="note">
+        Want real Wikipedia text? You can copy the output style here, or fetch from Wikipedia APIs in your own environment. This page stays offline for speed and to avoid CORS / rate limits.
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const parasEl = $("paras");
+    const sentsEl = $("sents");
+    const parasVal = $("parasVal");
+    const sentsVal = $("sentsVal");
+    const seedEl = $("seed");
+    const leadEl = $("lead");
+    const techyEl = $("techy");
+
+    const outEl = $("out");
+    const statusEl = $("status");
+
+    const countP = $("countP");
+    const countS = $("countS");
+    const countW = $("countW");
+
+    // ---- Fact bank (compact, Wikipedia-like). Not copied from Wikipedia.
+    // Each topic has ~20-30 sentences so generation can feel varied.
+    const FACTS = {
+      penguin: [
+        "Penguins are a group of aquatic, flightless birds in the order Sphenisciformes.",
+        "They are highly adapted to life in the water, with wings that function as flippers.",
+        "Most penguin species live in the Southern Hemisphere, with the greatest diversity around Antarctica and subantarctic islands.",
+        "Penguin plumage is typically countershaded, with a dark back and a light belly that can reduce visibility to predators.",
+        "Many species form large breeding colonies and show strong site fidelity from year to year.",
+        "Penguins feed primarily on fish, krill, and squid, using streamlined bodies to pursue prey underwater.",
+        "Some penguins can dive for several minutes and reach depths of hundreds of meters.",
+        "The emperor penguin is the largest living penguin species, while the little penguin is among the smallest.",
+        "Penguins use vocalizations and visual displays to recognize mates and chicks within dense colonies.",
+        "Adults often molt all at once, shedding and replacing feathers during a fasting period on land.",
+        "Their bones are relatively solid, which helps reduce buoyancy during diving.",
+        "Penguin eggs are incubated on feet or in nests, depending on the species.",
+        "Many penguins breed during brief windows when food is abundant near the colony.",
+        "Climate patterns and sea-ice conditions can strongly influence penguin breeding success.",
+        "Predators include seals, large seabirds, and in some regions sharks.",
+        "Penguins can regulate heat with dense feathers and a layer of fat, but may overheat on warm days.",
+        "Some species travel long distances between foraging grounds and breeding sites.",
+        "Penguin colonies can enrich nearby soils with nutrients from guano.",
+        "Several penguin species are threatened by habitat changes, fishing pressure, and pollution.",
+        "The name " + '"penguin"' + " has an uncertain origin and has been applied to different birds historically."
+      ],
+      octopus: [
+        "Octopuses are soft-bodied cephalopods known for eight muscular arms lined with suckers.",
+        "They have large brains relative to body size and display complex problem-solving behaviors.",
+        "An octopus moves using jet propulsion and crawling, and can rapidly change direction.",
+        "Color and texture changes are controlled by chromatophores and skin structures that create camouflage.",
+        "Many species are solitary and occupy dens in rock crevices or burrows.",
+        "Octopuses are carnivorous, feeding on crustaceans, mollusks, and fish.",
+        "The beak is made of chitin and can break shells and exoskeletons.",
+        "Most octopus species have a short life span, often around one to two years.",
+        "Females typically guard eggs and may stop feeding until the brood hatches.",
+        "Ink release can confuse predators and provide cover for escape.",
+        "Octopus blood uses hemocyanin, which contains copper and carries oxygen efficiently in cold water.",
+        "Each arm contains many neurons and can perform local sensing and movement control.",
+        "Some octopuses use tools, such as carrying coconut shells for shelter.",
+        "The blue-ringed octopus is small but can deliver a potent neurotoxin.",
+        "Octopuses can squeeze through narrow openings because they lack rigid bones.",
+        "They have keen eyesight and can detect polarized light.",
+        "Some species mimic other animals to deter predators.",
+        "Cephalopods are closely related to squids and cuttlefish, but octopuses usually lack an internal shell.",
+        "In many ecosystems, octopuses are both important predators and prey.",
+        "Their intelligence and flexibility make them common subjects in behavioral research."
+      ],
+      elephant: [
+        "Elephants are the largest living land animals and belong to the family Elephantidae.",
+        "They are characterized by a long trunk, tusks, and large ears used for heat regulation.",
+        "The trunk combines the nose and upper lip and is used for breathing, grasping, and communication.",
+        "Elephants are herbivores that consume grasses, leaves, bark, and fruit.",
+        "African elephants and Asian elephants are the two major living lineages, with differences in ear size and skull shape.",
+        "Tusks are enlarged incisors that can be used for digging, stripping bark, and defense.",
+        "Elephant social groups are often matriarchal, led by an experienced female.",
+        "They communicate with low-frequency sounds that can travel long distances.",
+        "An elephant's brain is highly developed, supporting strong memory and social learning.",
+        "Individuals show empathy-like behaviors, including attention to injured herd members.",
+        "Elephants shape habitats by knocking down trees and creating pathways and water access points.",
+        "They require large home ranges and can travel far to find water during dry seasons.",
+        "Gestation is long, and calves may nurse for several years.",
+        "Poaching for ivory has severely reduced some populations.",
+        "Habitat fragmentation increases conflict between elephants and people in agricultural regions.",
+        "Elephant feet have thick pads that cushion weight and help with quiet movement.",
+        "Their skin is sensitive and can benefit from mud baths that protect against sun and insects.",
+        "Elephants can swim using their trunks as snorkels.",
+        "Conservation programs often focus on protected corridors and anti-poaching enforcement.",
+        "In many cultures, elephants are important symbols in art, religion, and folklore."
+      ],
+      wolf: [
+        "The gray wolf is a large canid native to Eurasia and North America.",
+        "Wolves are social predators that often live in family groups known as packs.",
+        "Pack structure can include a breeding pair and their offspring from multiple years.",
+        "They are opportunistic hunters, taking prey ranging from small mammals to large ungulates.",
+        "Cooperative hunting allows wolves to target animals larger than an individual could subdue.",
+        "Wolves communicate using vocalizations, scent marking, and body language.",
+        "Howling can coordinate pack members and advertise territory.",
+        "The wolf's coat varies widely in color, including gray, white, black, and reddish tones.",
+        "Wolves have keen senses of smell and hearing that aid in hunting and navigation.",
+        "Territories can span hundreds of square kilometers, depending on prey density and habitat.",
+        "Wolves play a key ecological role by influencing prey populations and behavior.",
+        "In some regions, wolf recovery has been linked to changes in vegetation through trophic cascades.",
+        "Wolves can travel long distances, sometimes covering dozens of kilometers in a day.",
+        "Pups are born in dens and are cared for by multiple pack members.",
+        "Disease, persecution, and habitat change have shaped wolf distribution over time.",
+        "Domestic dogs share a common ancestor with wolves and can interbreed in some situations.",
+        "Wolf diets can include carrion as well as fresh kills.",
+        "Seasonal patterns often affect breeding and hunting behavior.",
+        "Conflicts with livestock have led to management measures such as compensation and nonlethal deterrents.",
+        "Wolves appear prominently in myth and literature across many societies."
+      ],
+      honeybee: [
+        "Honey bees are eusocial insects in the genus Apis, known for producing honey and wax.",
+        "A typical colony contains a queen, many worker bees, and seasonally present drones.",
+        "Workers perform age-related tasks, shifting from nursing to foraging as they mature.",
+        "Honey is made from nectar that is enzymatically processed and dehydrated in honeycomb cells.",
+        "Bees communicate food locations through the waggle dance, which conveys direction and distance.",
+        "Colonies regulate temperature by fanning wings and clustering to conserve heat.",
+        "Wax scales produced by workers are used to build hexagonal comb structures.",
+        "Honey bees collect pollen as a protein source and store it as bee bread.",
+        "Pollination by bees supports reproduction in many flowering plants and crops.",
+        "The queen can lay many eggs per day during peak season.",
+        "Drones primarily exist to mate with queens from other colonies.",
+        "Swarming is a natural reproductive process where a colony splits and a new queen establishes another nest.",
+        "Honey bees can defend the colony using stings, pheromones, and coordinated behavior.",
+        "Varroa mites are a major parasite affecting bee health in many regions.",
+        "Pesticide exposure and habitat loss can stress colonies and reduce foraging success.",
+        "Bees perceive ultraviolet patterns on flowers that guide them to nectar.",
+        "The antennae are important sensory organs for smell and touch.",
+        "Workers can produce limited eggs, but queen pheromones typically suppress this.",
+        "Managed hives are used in agriculture for pollination services.",
+        "Wild colonies often nest in tree cavities or protected crevices."
+      ],
+      axolotl: [
+        "The axolotl is a neotenic salamander that retains larval features throughout adulthood.",
+        "It is native to the lake and canal systems near Mexico City.",
+        "Axolotls typically keep external gills, a tail fin, and an aquatic lifestyle.",
+        "They are notable for regenerative abilities, including regrowing limbs and parts of the spinal cord.",
+        "In the wild, axolotls feed on invertebrates, small fish, and other aquatic prey.",
+        "Habitat loss, pollution, and introduced fish have contributed to severe population declines.",
+        "Axolotls can breathe through gills, skin, and lungs.",
+        "They have a wide head and a mouth that can create a characteristic " + '"smiling"' + " appearance.",
+        "Breeding occurs in water, with eggs laid on plants or structures.",
+        "Unlike many salamanders, axolotls may not naturally undergo metamorphosis.",
+        "Under certain conditions, metamorphosis can be induced, producing a more terrestrial form.",
+        "Axolotls are widely used as laboratory animals in studies of development and regeneration.",
+        "Color variants in captivity include leucistic and albino forms.",
+        "They are sensitive to water quality and temperature changes.",
+        "Axolotls detect movement with a lateral line system similar to that of fish.",
+        "Their limbs are relatively small but functional for walking along the bottom.",
+        "Regeneration involves complex cellular processes, including formation of a blastema.",
+        "Conservation efforts include habitat restoration and captive breeding programs.",
+        "The species is culturally significant in Mexico and appears in art and mythology.",
+        "Axolotls belong to the genus Ambystoma, which includes several North American salamanders."
+      ],
+      red_panda: [
+        "The red panda is a small mammal native to the eastern Himalayas and southwestern China.",
+        "It has reddish-brown fur, a long ringed tail, and a masked face.",
+        "Red pandas are arboreal and use their tails for balance and insulation.",
+        "Their diet is dominated by bamboo, but they also eat fruit, insects, and small animals.",
+        "A specialized wrist bone, sometimes called a false thumb, helps grasp bamboo stems.",
+        "Red pandas are generally solitary, with individuals maintaining overlapping territories.",
+        "They are most active at dawn and dusk, with periods of rest in trees.",
+        "Thick fur on the soles of the feet improves traction and reduces heat loss.",
+        "Vocalizations include whistles and squeals, along with scent marking for communication.",
+        "Habitat loss and fragmentation are major threats to wild populations.",
+        "The species is classified in its own family, Ailuridae.",
+        "Red pandas prefer cool, temperate forests with dense bamboo understory.",
+        "Females give birth to litters that are raised in nests or tree hollows.",
+        "They can stand on hind legs to appear larger when threatened.",
+        "Predators may include large cats and birds of prey, depending on the region.",
+        "Captive breeding programs support conservation and research.",
+        "Climate change may affect bamboo availability and suitable habitat range.",
+        "Despite the name, red pandas are not closely related to giant pandas.",
+        "Their sense of smell is well developed and used in territorial behavior.",
+        "The red panda has become a flagship species for forest conservation initiatives."
+      ],
+      snow_leopard: [
+        "The snow leopard is a large cat adapted to cold mountain environments in Central and South Asia.",
+        "Its thick, smoky-gray coat provides camouflage among rocks and snow.",
+        "A long tail aids balance on steep terrain and can wrap around the body for warmth.",
+        "Snow leopards inhabit high elevations, often above the tree line.",
+        "They prey on wild sheep and goats, as well as smaller mammals and birds.",
+        "Powerful hind limbs allow long leaps across cliffs and ravines.",
+        "Their nasal cavities are relatively large, helping warm and humidify cold air.",
+        "Snow leopards are solitary and use scent marking to define territories.",
+        "Mating season is typically in winter, with cubs born in spring.",
+        "Population estimates are uncertain because of remote habitat and elusive behavior.",
+        "Poaching and illegal trade can threaten individuals for fur and body parts.",
+        "Declines in prey and retaliatory killing after livestock losses contribute to risk.",
+        "Conservation efforts include community-based programs and protected areas.",
+        "Snow leopards are sometimes called " + '"ghosts of the mountains"' + " due to their secretive nature.",
+        "They are capable of purring but cannot roar like some other big cats.",
+        "Genetic studies place them within the genus Panthera.",
+        "Climate change may shift alpine ecosystems and affect prey availability.",
+        "Camera traps are commonly used to monitor snow leopard presence.",
+        "Their large paws act like snowshoes on soft surfaces.",
+        "Human-wildlife conflict mitigation can include corrals, guarding, and compensation schemes."
+      ],
+      blue_whale: [
+        "The blue whale is the largest animal known to have ever existed.",
+        "It is a baleen whale that filters krill from seawater using fringed plates in its mouth.",
+        "Blue whales are found in oceans worldwide and undertake long seasonal migrations.",
+        "Their bodies are streamlined, with a mottled blue-gray coloration.",
+        "A single adult can consume several tons of krill per day during feeding season.",
+        "Blue whales produce some of the loudest biological sounds, used for communication over long distances.",
+        "The heart of a blue whale is extremely large and pumps blood through a vast circulatory system.",
+        "Calves are born after about a year of gestation and grow rapidly on rich milk.",
+        "Individuals breathe through blowholes on the top of the head and surface regularly.",
+        "Blue whales can dive for minutes at a time, adjusting buoyancy and conserving oxygen.",
+        "Commercial whaling in the 20th century caused major population declines.",
+        "International protections have helped some populations recover, though numbers remain below historic levels.",
+        "Ship strikes and entanglement in fishing gear are modern risks in busy waters.",
+        "Feeding often occurs in productive high-latitude regions during summer months.",
+        "Blue whales are generally solitary or found in small groups rather than large pods.",
+        "Their vocalizations include low-frequency calls that can travel across ocean basins.",
+        "Scientists track movements with photo-identification, acoustic monitoring, and satellite tags.",
+        "Baleen whales differ from toothed whales in feeding strategy and anatomy.",
+        "Ocean noise can interfere with long-range communication and behavior.",
+        "Blue whales play a role in marine nutrient cycling through feeding and waste production."
+      ]
+    };
+
+    const MIXED_KEYS = Object.keys(FACTS);
+
+    // ---- Light templates to add Wikipedia-esque variety
+    const LEADS = {
+      penguin: [
+        "The penguin is a flightless seabird adapted for life in the water.",
+        "Penguins are aquatic birds known for their upright stance and efficient swimming."
+      ],
+      octopus: [
+        "An octopus is a marine cephalopod mollusk with eight arms and notable intelligence.",
+        "The octopus is a soft-bodied invertebrate recognized for camouflage and problem solving."
+      ],
+      elephant: [
+        "The elephant is a large herbivorous mammal distinguished by its trunk and tusks.",
+        "Elephants are social mammals with complex behavior and long lifespans."
+      ],
+      wolf: [
+        "The gray wolf is a wild canid that lives in family-based packs across broad ranges.",
+        "Wolves are large predators that influence ecosystems through their hunting and movement."
+      ],
+      honeybee: [
+        "The honey bee is a social insect that forms colonies and is important for pollination.",
+        "Honey bees are well-known for honey production and communication dances."
+      ],
+      axolotl: [
+        "The axolotl is an aquatic salamander famous for remaining in a juvenile form as an adult.",
+        "Axolotls are neotenic amphibians that can regenerate complex body parts."
+      ],
+      red_panda: [
+        "The red panda is a small arboreal mammal that feeds largely on bamboo.",
+        "Red pandas live in cool forests and are recognized by their ringed tails."
+      ],
+      snow_leopard: [
+        "The snow leopard is a mountain-dwelling big cat adapted to alpine climates.",
+        "Snow leopards are elusive felids that inhabit rugged high-elevation terrain."
+      ],
+      blue_whale: [
+        "The blue whale is a massive baleen whale that feeds primarily on krill.",
+        "Blue whales are wide-ranging marine mammals known for long migrations and loud calls."
+      ],
+      mixed: [
+        "Animals show a wide range of adaptations that reflect their habitats and evolutionary history.",
+        "Animal species vary greatly in size, behavior, and ecological roles across ecosystems."
+      ]
+    };
+
+    const TECHY_PHRASES = [
+      "In the biological classification system, it is placed within a broader clade of related species.",
+      "The species name is often written in binomial form, using Latinized genus and species epithets.",
+      "Morphological traits and genetic studies both inform its placement on the evolutionary tree.",
+      "Its distribution has been shaped by climate, geography, and human activity.",
+      "Field studies frequently rely on tagging, camera traps, or acoustic monitoring to estimate abundance."
+    ];
+
+    function randInt(n){ return Math.floor(Math.random() * n); }
+    function pick(arr){ return arr[randInt(arr.length)]; }
+
+    function shuffleInPlace(a){
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
+      }
+      return a;
+    }
+
+    function buildPool(seed){
+      if(seed === 'mixed'){
+        // Blend facts across topics.
+        const pool = [];
+        for(const k of MIXED_KEYS){ pool.push(...FACTS[k]); }
+        return shuffleInPlace(pool.slice());
+      }
+      return shuffleInPlace(FACTS[seed].slice());
+    }
+
+    function buildLead(seed){
+      const key = seed in LEADS ? seed : 'mixed';
+      return pick(LEADS[key]);
+    }
+
+    function maybeAddTechy(outSentences, techy){
+      if(!techy) return;
+      // Add at most ~1 per paragraph on average.
+      if(Math.random() < 0.55) outSentences.push(pick(TECHY_PHRASES));
+    }
+
+    function generate(){
+      const paras = Number(parasEl.value);
+      const sentsPer = Number(sentsEl.value);
+      const seed = seedEl.value;
+      const lead = leadEl.checked;
+      const techy = techyEl.checked;
+
+      const pool = buildPool(seed);
+      let idx = 0;
+
+      const paragraphs = [];
+      let totalSentences = 0;
+
+      for(let p=0;p<paras;p++){
+        const sents = [];
+
+        if(p===0 && lead){
+          sents.push(buildLead(seed));
+        }
+
+        for(let s=0;s<sentsPer;s++){
+          if(idx >= pool.length){
+            // Re-shuffle to avoid hard stop.
+            shuffleInPlace(pool);
+            idx = 0;
+          }
+          sents.push(pool[idx++]);
+        }
+
+        maybeAddTechy(sents, techy);
+
+        // Ensure nice spacing and no double spaces.
+        const paragraph = sents
+          .map(t => t.trim().replace(/\s+/g, ' '))
+          .join(' ')
+          .replace(/\s+([,.;:!?])/g, '$1');
+
+        paragraphs.push(paragraph);
+        totalSentences += sents.length;
+      }
+
+      const text = paragraphs.join("\n\n");
+      outEl.value = text;
+
+      // Stats
+      countP.textContent = String(paras);
+      countS.textContent = String(totalSentences);
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      countW.textContent = String(words);
+
+      setStatus(`Generated ${paras} paragraph${paras===1?'':'s'} from the “${seedLabel(seed)}” seed.`, true);
+    }
+
+    function seedLabel(seed){
+      const map = {
+        mixed: 'Mixed',
+        penguin: 'Penguin',
+        octopus: 'Octopus',
+        elephant: 'Elephant',
+        wolf: 'Wolf',
+        honeybee: 'Honey bee',
+        axolotl: 'Axolotl',
+        red_panda: 'Red panda',
+        snow_leopard: 'Snow leopard',
+        blue_whale: 'Blue whale'
+      };
+      return map[seed] || seed;
+    }
+
+    function setStatus(msg, ok){
+      statusEl.textContent = msg;
+      statusEl.className = 'status ' + (ok ? 'ok' : 'bad');
+      window.clearTimeout(setStatus._t);
+      setStatus._t = window.setTimeout(() => {
+        statusEl.textContent = '';
+        statusEl.className = 'status';
+      }, 2200);
+    }
+
+    async function copy(){
+      const text = outEl.value;
+      if(!text.trim()){
+        setStatus('Nothing to copy yet — click Generate.', false);
+        return;
+      }
+      try{
+        await navigator.clipboard.writeText(text);
+        setStatus('Copied to clipboard.', true);
+      }catch(e){
+        // Fallback
+        outEl.focus();
+        outEl.select();
+        const ok = document.execCommand('copy');
+        setStatus(ok ? 'Copied to clipboard.' : 'Copy failed (browser blocked clipboard).', ok);
+      }
+    }
+
+    function downloadTxt(){
+      const text = outEl.value;
+      if(!text.trim()){
+        setStatus('Nothing to download yet — click Generate.', false);
+        return;
+      }
+      const blob = new Blob([text], {type:'text/plain;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `animal-facts-ipsum-${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      a.remove();
+      setStatus('Downloaded .txt', true);
+    }
+
+    function updateVals(){
+      parasVal.textContent = parasEl.value;
+      sentsVal.textContent = sentsEl.value;
+      // Update badges optimistically (lead + techy can add extra sentence, but that's fine)
+      countP.textContent = parasEl.value;
+      const approx = Number(parasEl.value) * Number(sentsEl.value) + (leadEl.checked ? 1 : 0);
+      countS.textContent = String(approx);
+    }
+
+    function selectAll(){
+      outEl.focus();
+      outEl.select();
+      setStatus('Selected output.', true);
+    }
+
+    function clearOut(){
+      outEl.value = '';
+      countW.textContent = '—';
+      setStatus('Cleared.', true);
+    }
+
+    // Wiring
+    parasEl.addEventListener('input', updateVals);
+    sentsEl.addEventListener('input', updateVals);
+    leadEl.addEventListener('change', updateVals);
+    seedEl.addEventListener('change', () => setStatus(`Seed set to “${seedLabel(seedEl.value)}”.`, true));
+
+    $("gen").addEventListener('click', generate);
+    $("copy").addEventListener('click', copy);
+    $("download").addEventListener('click', downloadTxt);
+    $("selectAll").addEventListener('click', selectAll);
+    $("clear").addEventListener('click', clearOut);
+
+    // First paint
+    updateVals();
+    // Generate an initial sample so the page doesn't feel empty.
+    generate();
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'enter'){
+        e.preventDefault();
+        generate();
+      }
+      if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l'){
+        e.preventDefault();
+        clearOut();
+      }
+    });
+  </script>
+</body>
+</html>
