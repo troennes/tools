@@ -1,0 +1,1251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Crop & Resize</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --panel2:#0f1730;
+      --text:#e7ecff;
+      --muted:#a9b3d6;
+      --border:rgba(255,255,255,.12);
+      --accent:#6ea8ff;
+      --danger:#ff6b6b;
+      --shadow:0 12px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background:radial-gradient(900px 450px at 10% 0%, rgba(110,168,255,.22), transparent 55%),
+                 radial-gradient(700px 380px at 100% 10%, rgba(255,107,107,.14), transparent 55%),
+                 var(--bg);
+      color:var(--text);
+    }
+    header{
+      padding:18px 18px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      position:sticky; top:0;
+      background:linear-gradient(to bottom, rgba(11,16,32,.92), rgba(11,16,32,.70));
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid var(--border);
+      z-index:10;
+    }
+    header h1{font-size:16px;margin:0;letter-spacing:.2px}
+    header .sub{font-size:12px;color:var(--muted)}
+
+    .wrap{padding:18px; display:grid; grid-template-columns: 380px 1fr; gap:14px; max-width: 1400px; margin:0 auto;}
+    @media (max-width: 1050px){
+      .wrap{grid-template-columns:1fr;}
+    }
+
+    .card{
+      background:linear-gradient(180deg, rgba(17,26,51,.92), rgba(15,23,48,.92));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{padding:14px 14px 10px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:baseline; justify-content:space-between;}
+    .card .hd b{font-size:13px; letter-spacing:.2px}
+    .card .hd span{font-size:12px;color:var(--muted)}
+    .card .bd{padding:14px}
+
+    .row{display:flex; gap:10px; align-items:center;}
+    .row.wrap2{flex-wrap:wrap}
+
+    input[type="file"]{display:none}
+    .btn{
+      appearance:none;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.06);
+      color:var(--text);
+      padding:9px 10px;
+      border-radius:12px;
+      cursor:pointer;
+      font-size:13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+      transition:transform .05s ease, background .15s ease, border-color .15s ease;
+    }
+    .btn:hover{background:rgba(255,255,255,.09); border-color:rgba(255,255,255,.18)}
+    .btn:active{transform:translateY(1px)}
+    .btn.primary{background:rgba(110,168,255,.16); border-color:rgba(110,168,255,.40)}
+    .btn.primary:hover{background:rgba(110,168,255,.22)}
+    .btn.danger{background:rgba(255,107,107,.12); border-color:rgba(255,107,107,.35)}
+    .btn.danger:hover{background:rgba(255,107,107,.18)}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    .grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+    .grid3{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px}
+    @media (max-width: 520px){
+      .grid, .grid3{grid-template-columns:1fr}
+    }
+
+    label{display:block; font-size:12px; color:var(--muted); margin:0 0 6px}
+    .field{
+      background:rgba(0,0,0,.22);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:10px;
+      min-width:0;
+    }
+    .field input[type="number"], .field input[type="text"], .field select{
+      width:100%;
+      background:transparent;
+      border:0;
+      color:var(--text);
+      outline:none;
+      font-size:14px;
+      font-family:var(--sans);
+    }
+    .field input[type="number"]{appearance:textfield}
+    .field small{display:block; font-size:11px; color:var(--muted); margin-top:6px}
+
+    .slider{
+      display:grid;
+      grid-template-columns: 1fr 80px;
+      gap:10px;
+      align-items:center;
+    }
+    .slider input[type="range"]{width:100%}
+    .pill{
+      font-family:var(--mono);
+      font-size:12px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      text-align:center;
+    }
+
+    .stage{
+      position:relative;
+      min-height: 520px;
+      background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(0,0,0,.12));
+      border:1px dashed rgba(255,255,255,.14);
+      border-radius:var(--radius);
+      overflow:hidden;
+      /* IMPORTANT: children are absolutely positioned so they don't affect layout
+         (prevents ResizeObserver feedback loop where canvas height makes stage grow). */
+    }
+
+    .stage .empty{
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center;
+      color:var(--muted);
+      padding:18px;
+      text-align:center;
+      z-index:3;
+      pointer-events:none;
+    }
+
+    /* IMPORTANT: make the canvas absolute so it never contributes to stage height */
+    canvas{
+      position:absolute;
+      inset:0;
+      display:block;
+      width:100%;
+      height:100%;
+      z-index:1;
+    }
+
+    .hud{
+      position:absolute;
+      left:12px; top:12px;
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+      z-index:5;
+    }
+    .hud .chip{
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(0,0,0,.28);
+      backdrop-filter: blur(6px);
+      padding:6px 8px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--text);
+    }
+
+    .footerHelp{margin-top:10px; color:var(--muted); font-size:12px; line-height:1.45}
+    .kbd{font-family:var(--mono); font-size:11px; border:1px solid var(--border); padding:2px 6px; border-radius:8px; background:rgba(0,0,0,.22); color:var(--text)}
+
+    .outRow{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .status{font-size:12px; color:var(--muted)}
+
+    .mono{font-family:var(--mono)}
+
+    .notice{
+      border:1px solid rgba(110,168,255,.35);
+      background:rgba(110,168,255,.10);
+      padding:10px;
+      border-radius:12px;
+      color:var(--text);
+      font-size:12px;
+      line-height:1.45;
+    }
+
+    .toggle{
+      display:flex;
+      border:1px solid var(--border);
+      border-radius:12px;
+      overflow:hidden;
+    }
+    .toggle button{
+      flex:1;
+      border:0;
+      background:rgba(255,255,255,.05);
+      color:var(--text);
+      padding:9px 10px;
+      font-size:13px;
+      cursor:pointer;
+    }
+    .toggle button[aria-pressed="true"]{
+      background:rgba(110,168,255,.18);
+      border-left:1px solid rgba(255,255,255,.08);
+      border-right:1px solid rgba(255,255,255,.08);
+    }
+    .toggle button:first-child[aria-pressed="true"]{border-left:0}
+    .toggle button:last-child[aria-pressed="true"]{border-right:0}
+
+    .sep{height:1px; background:var(--border); margin:14px 0}
+
+    .warn{color:#ffd2d2}
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Image Crop & Resize</h1>
+      <div class="sub">Drag to move crop • Resize handles • Zoom to fit • Export as PNG/JPEG/WebP</div>
+    </div>
+    <div class="row wrap2">
+      <label class="btn primary" for="file" title="Open image">
+        <span aria-hidden="true">📷</span> Open
+      </label>
+      <input id="file" type="file" accept="image/*" />
+      <button id="btnPaste" class="btn" type="button" title="Paste an image from clipboard">📋 Paste</button>
+      <button id="btnFit" class="btn" type="button" title="Fit image to crop (F)">🧲 Fit</button>
+      <button id="btnCenter" class="btn" type="button" title="Center crop (C)">🎯 Center crop</button>
+      <button id="btnReset" class="btn danger" type="button" title="Reset">↩ Reset</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card">
+      <div class="hd"><b>Settings</b><span>Crop, resize & export</span></div>
+      <div class="bd">
+        <div class="notice" id="notice">
+          <div><b>Tip:</b> You can also paste an image (clipboard) or drag & drop a file onto the canvas.</div>
+          <div style="margin-top:6px">Shortcuts: <span class="kbd">F</span> fit • <span class="kbd">C</span> center crop • <span class="kbd">Shift</span> keep square • <span class="kbd">Alt</span> resize from center</div>
+        </div>
+
+        <div class="sep"></div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Aspect ratio</label>
+            <select id="aspect">
+              <option value="free">Free</option>
+              <option value="1:1">1:1 (Square)</option>
+              <option value="4:3">4:3</option>
+              <option value="3:2">3:2</option>
+              <option value="16:9">16:9</option>
+              <option value="9:16">9:16</option>
+              <option value="custom">Custom…</option>
+            </select>
+            <small class="mono" id="aspectHelp">Freeform crop</small>
+          </div>
+          <div class="field" id="customAspectField" style="display:none">
+            <label>Custom ratio (W : H)</label>
+            <div class="row" style="gap:8px">
+              <input id="aspectW" type="number" min="1" step="1" value="1" />
+              <span class="mono" style="opacity:.8">:</span>
+              <input id="aspectH" type="number" min="1" step="1" value="1" />
+            </div>
+            <small>Used when Aspect ratio = Custom…</small>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Output size</label>
+            <div class="grid" style="gap:8px">
+              <div>
+                <label class="mono" style="margin:0 0 6px">Width (px)</label>
+                <input id="outW" type="number" min="1" step="1" value="1024" />
+              </div>
+              <div>
+                <label class="mono" style="margin:0 0 6px">Height (px)</label>
+                <input id="outH" type="number" min="1" step="1" value="1024" />
+              </div>
+            </div>
+            <small>Defines exported pixel dimensions (crop is scaled).</small>
+          </div>
+          <div class="field">
+            <label>Resize mode</label>
+            <div class="toggle" role="group" aria-label="Resize mode">
+              <button id="modeExact" aria-pressed="true" type="button">Exact</button>
+              <button id="modeKeep" aria-pressed="false" type="button">Keep aspect</button>
+            </div>
+            <small><span class="mono">Exact</span> uses your width & height. <span class="mono">Keep aspect</span> links them.</small>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="field">
+          <label>Zoom (image relative to crop)</label>
+          <div class="slider">
+            <input id="zoom" type="range" min="10" max="400" value="100" />
+            <div class="pill" id="zoomVal">100%</div>
+          </div>
+          <small>Higher zoom = show less of the image within the crop. Use <span class="kbd">F</span> to auto-fit.</small>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Export format</label>
+            <select id="fmt">
+              <option value="image/png">PNG</option>
+              <option value="image/jpeg">JPEG</option>
+              <option value="image/webp">WebP</option>
+            </select>
+            <small>PNG supports transparency; JPEG does not.</small>
+          </div>
+          <div class="field" id="qualityField">
+            <label>Quality (JPEG/WebP)</label>
+            <div class="slider">
+              <input id="quality" type="range" min="40" max="100" value="92" />
+              <div class="pill" id="qualityVal">92</div>
+            </div>
+            <small>Higher = bigger file.</small>
+          </div>
+        </div>
+
+        <div style="height:10px"></div>
+
+        <div class="outRow">
+          <button id="btnExport" class="btn primary" type="button" disabled>⬇ Export</button>
+          <button id="btnDownload" class="btn" type="button" disabled>💾 Download</button>
+          <span class="status" id="status">Open an image to begin.</span>
+        </div>
+
+        <div class="footerHelp">
+          <div><b>How it works:</b> the crop rectangle defines what you export. Move the crop (drag inside) and resize it (drag handles). Drag the image background (outside crop) to reposition the image under the crop.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="hd"><b>Canvas</b><span class="mono" id="meta">—</span></div>
+      <div class="bd">
+        <div class="stage" id="stage" tabindex="0" aria-label="Crop editor">
+          <div class="hud" id="hud" style="display:none">
+            <div class="chip mono" id="chipSrc">Src: —</div>
+            <div class="chip mono" id="chipCrop">Crop: —</div>
+            <div class="chip mono" id="chipOut">Out: —</div>
+          </div>
+          <div class="empty" id="empty">Drop an image here, or click <b>Open</b> / <b>Paste</b>.</div>
+          <canvas id="cv"></canvas>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const fileEl = $("file");
+  const stage = $("stage");
+  const cv = $("cv");
+  const ctx = cv.getContext("2d", { alpha: true });
+
+  const btnPaste = $("btnPaste");
+  const btnFit = $("btnFit");
+  const btnCenter = $("btnCenter");
+  const btnReset = $("btnReset");
+  const btnExport = $("btnExport");
+  const btnDownload = $("btnDownload");
+
+  const aspect = $("aspect");
+  const customAspectField = $("customAspectField");
+  const aspectW = $("aspectW");
+  const aspectH = $("aspectH");
+  const aspectHelp = $("aspectHelp");
+
+  const outW = $("outW");
+  const outH = $("outH");
+  const modeExact = $("modeExact");
+  const modeKeep = $("modeKeep");
+
+  const zoom = $("zoom");
+  const zoomVal = $("zoomVal");
+
+  const fmt = $("fmt");
+  const qualityField = $("qualityField");
+  const quality = $("quality");
+  const qualityVal = $("qualityVal");
+
+  const status = $("status");
+  const empty = $("empty");
+  const hud = $("hud");
+  const chipSrc = $("chipSrc");
+  const chipCrop = $("chipCrop");
+  const chipOut = $("chipOut");
+  const meta = $("meta");
+
+  const state = {
+    img: null,
+    imgBitmap: null,
+    srcW: 0,
+    srcH: 0,
+
+    dpr: Math.max(1, Math.min(2, window.devicePixelRatio || 1)),
+    viewW: 0,
+    viewH: 0,
+
+    crop: { x: 80, y: 60, w: 320, h: 320 },
+
+    baseScale: 1,
+    zoomFactor: 1,
+    imgX: 0,
+    imgY: 0,
+
+    pointerDown: false,
+    dragMode: null,
+    resizeHandle: null,
+    start: null,
+
+    keepAspect: false,
+    outW: 1024,
+    outH: 1024,
+    lastBlob: null,
+    lastUrl: null,
+  };
+
+  const HANDLE = 10;
+  const HIT = 14;
+  const MIN_CROP = 30;
+
+  function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+
+  function setStatus(msg, isWarn=false){
+    status.innerHTML = isWarn ? `<span class="warn">${escapeHtml(msg)}</span>` : escapeHtml(msg);
+  }
+
+  function escapeHtml(s){
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  function updateQualityVisibility(){
+    const isLossy = fmt.value === "image/jpeg" || fmt.value === "image/webp";
+    qualityField.style.display = isLossy ? "block" : "none";
+  }
+
+  function resizeCanvasToStage(){
+    const r = stage.getBoundingClientRect();
+    const w = Math.max(320, Math.floor(r.width));
+    const h = Math.max(420, Math.floor(r.height));
+    state.viewW = w;
+    state.viewH = h;
+    cv.width = Math.floor(w * state.dpr);
+    cv.height = Math.floor(h * state.dpr);
+    cv.style.width = w + "px";
+    cv.style.height = h + "px";
+    ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+
+    state.crop.w = clamp(state.crop.w, MIN_CROP, w - 20);
+    state.crop.h = clamp(state.crop.h, MIN_CROP, h - 20);
+    state.crop.x = clamp(state.crop.x, 10, w - state.crop.w - 10);
+    state.crop.y = clamp(state.crop.y, 10, h - state.crop.h - 10);
+
+    draw();
+  }
+
+  function parseAspect(value){
+    if (value === "free") return null;
+    if (value === "custom") {
+      const w = Math.max(1, Math.floor(Number(aspectW.value || 1)));
+      const h = Math.max(1, Math.floor(Number(aspectH.value || 1)));
+      return w / h;
+    }
+    const m = /^([0-9]+):([0-9]+)$/.exec(value);
+    if (!m) return null;
+    const w = Number(m[1]);
+    const h = Number(m[2]);
+    if (!Number.isFinite(w) || !Number.isFinite(h) || h === 0) return null;
+    return w / h;
+  }
+
+  function applyAspectToCrop(anchor="center"){
+    const ar = parseAspect(aspect.value);
+    if (!ar) {
+      aspectHelp.textContent = "Freeform crop";
+      return;
+    }
+
+    const c = state.crop;
+    const cx = c.x + c.w/2;
+    const cy = c.y + c.h/2;
+
+    let newW = c.w;
+    let newH = c.h;
+    const current = c.w / c.h;
+
+    if (current > ar) newW = c.h * ar;
+    else newH = c.w / ar;
+
+    newW = clamp(newW, MIN_CROP, state.viewW - 20);
+    newH = clamp(newH, MIN_CROP, state.viewH - 20);
+
+    if (anchor === "center"){
+      c.w = newW; c.h = newH;
+      c.x = clamp(cx - c.w/2, 10, state.viewW - c.w - 10);
+      c.y = clamp(cy - c.h/2, 10, state.viewH - c.h - 10);
+    }
+
+    aspectHelp.textContent = `Locked to ${ar.toFixed(3)}:1`;
+  }
+
+  function updateHUD(){
+    if (!state.img){
+      hud.style.display = "none";
+      meta.textContent = "—";
+      return;
+    }
+    hud.style.display = "flex";
+    chipSrc.textContent = `Src: ${state.srcW}×${state.srcH}`;
+    chipCrop.textContent = `Crop: ${Math.round(state.crop.w)}×${Math.round(state.crop.h)}`;
+    chipOut.textContent = `Out: ${state.outW}×${state.outH}`;
+    meta.textContent = `${state.srcW}×${state.srcH} → ${state.outW}×${state.outH}`;
+  }
+
+  function setKeepAspect(on){
+    state.keepAspect = !!on;
+    modeExact.setAttribute("aria-pressed", String(!state.keepAspect));
+    modeKeep.setAttribute("aria-pressed", String(state.keepAspect));
+  }
+
+  function syncOutputFromInputs(changed){
+    let w = Math.max(1, Math.floor(Number(outW.value || 1)));
+    let h = Math.max(1, Math.floor(Number(outH.value || 1)));
+
+    if (state.keepAspect) {
+      let ratio = null;
+      const ar = parseAspect(aspect.value);
+      if (ar) ratio = ar;
+      else ratio = state.outW / state.outH;
+
+      if (changed === "w"){
+        h = Math.max(1, Math.round(w / ratio));
+        outH.value = String(h);
+      } else if (changed === "h"){
+        w = Math.max(1, Math.round(h * ratio));
+        outW.value = String(w);
+      }
+    }
+
+    state.outW = w;
+    state.outH = h;
+    updateHUD();
+    invalidateExport();
+  }
+
+  function invalidateExport(){
+    btnDownload.disabled = true;
+    btnExport.disabled = !state.img;
+    if (state.lastUrl){
+      URL.revokeObjectURL(state.lastUrl);
+      state.lastUrl = null;
+    }
+    state.lastBlob = null;
+  }
+
+  function setZoomFromSlider(){
+    const z = clamp(Number(zoom.value || 100), 10, 400);
+    zoomVal.textContent = `${Math.round(z)}%`;
+    state.zoomFactor = z / 100;
+    draw();
+    invalidateExport();
+  }
+
+  function centerCrop(){
+    const c = state.crop;
+    c.x = Math.round((state.viewW - c.w)/2);
+    c.y = Math.round((state.viewH - c.h)/2);
+    draw();
+    invalidateExport();
+  }
+
+  function resetAll(){
+    state.img = null;
+    if (state.imgBitmap){
+      try{ state.imgBitmap.close(); }catch{}
+      state.imgBitmap = null;
+    }
+    state.srcW = 0; state.srcH = 0;
+    state.baseScale = 1; state.zoomFactor = 1;
+    state.imgX = 0; state.imgY = 0;
+
+    state.crop = { x: 80, y: 60, w: 320, h: 320 };
+    aspect.value = "free";
+    customAspectField.style.display = "none";
+    aspectHelp.textContent = "Freeform crop";
+
+    zoom.value = "100";
+    zoomVal.textContent = "100%";
+
+    fmt.value = "image/png";
+    quality.value = "92";
+    qualityVal.textContent = "92";
+    updateQualityVisibility();
+
+    state.outW = 1024; state.outH = 1024;
+    outW.value = "1024";
+    outH.value = "1024";
+
+    setKeepAspect(false);
+
+    empty.style.display = "flex";
+    btnExport.disabled = true;
+    btnDownload.disabled = true;
+    setStatus("Open an image to begin.");
+
+    updateHUD();
+    draw();
+  }
+
+  async function loadImageFromBlob(blob){
+    const url = URL.createObjectURL(blob);
+    try{
+      const img = new Image();
+      img.decoding = "async";
+      img.loading = "eager";
+      img.src = url;
+      await img.decode();
+
+      state.img = img;
+      state.srcW = img.naturalWidth;
+      state.srcH = img.naturalHeight;
+
+      try {
+        state.imgBitmap = await createImageBitmap(blob);
+      } catch {
+        state.imgBitmap = null;
+      }
+
+      empty.style.display = "none";
+      btnExport.disabled = false;
+
+      const pad = 18;
+      const w = Math.min(state.viewW - pad*2, Math.max(220, Math.floor(state.viewW * .62)));
+      const h = Math.min(state.viewH - pad*2, Math.max(220, Math.floor(state.viewH * .62)));
+      state.crop.w = w;
+      state.crop.h = h;
+      state.crop.x = Math.round((state.viewW - w)/2);
+      state.crop.y = Math.round((state.viewH - h)/2);
+
+      fitImageToCrop(true);
+
+      state.outW = Math.round(state.crop.w);
+      state.outH = Math.round(state.crop.h);
+      outW.value = String(state.outW);
+      outH.value = String(state.outH);
+
+      updateHUD();
+      setStatus("Drag handles to crop; export when ready.");
+      invalidateExport();
+      draw();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  function fitImageToCrop(center=true){
+    if (!state.img) return;
+    const c = state.crop;
+    const scale = Math.max(c.w / state.srcW, c.h / state.srcH);
+    state.baseScale = scale;
+
+    const dispW = state.srcW * state.baseScale * state.zoomFactor;
+    const dispH = state.srcH * state.baseScale * state.zoomFactor;
+
+    if (center){
+      const cx = c.x + c.w/2;
+      const cy = c.y + c.h/2;
+      state.imgX = cx - dispW/2;
+      state.imgY = cy - dispH/2;
+    } else {
+      state.imgX = clamp(state.imgX, c.x + c.w - dispW, c.x);
+      state.imgY = clamp(state.imgY, c.y + c.h - dispH, c.y);
+    }
+
+    draw();
+    invalidateExport();
+  }
+
+  function draw(){
+    const w = state.viewW, h = state.viewH;
+    ctx.clearRect(0,0,w,h);
+    drawChecker(ctx, w, h);
+
+    if (state.img){
+      const dispW = state.srcW * state.baseScale * state.zoomFactor;
+      const dispH = state.srcH * state.baseScale * state.zoomFactor;
+
+      const src = state.imgBitmap || state.img;
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(src, state.imgX, state.imgY, dispW, dispH);
+
+      ctx.save();
+      ctx.fillStyle = "rgba(0,0,0,.45)";
+      ctx.beginPath();
+      ctx.rect(0,0,w,h);
+      ctx.rect(state.crop.x, state.crop.y, state.crop.w, state.crop.h);
+      ctx.fill("evenodd");
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,.85)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(state.crop.x, state.crop.y, state.crop.w, state.crop.h);
+
+      ctx.strokeStyle = "rgba(255,255,255,.25)";
+      ctx.lineWidth = 1;
+      for (let i=1;i<=2;i++){
+        const x = state.crop.x + state.crop.w * (i/3);
+        const y = state.crop.y + state.crop.h * (i/3);
+        ctx.beginPath();
+        ctx.moveTo(x, state.crop.y);
+        ctx.lineTo(x, state.crop.y + state.crop.h);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(state.crop.x, y);
+        ctx.lineTo(state.crop.x + state.crop.w, y);
+        ctx.stroke();
+      }
+
+      drawHandles(ctx, state.crop);
+      ctx.restore();
+
+      updateHUD();
+    }
+  }
+
+  function drawChecker(ctx, w, h){
+    const size = 14;
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,.06)";
+    ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = "rgba(0,0,0,.18)";
+    for (let y=0;y<h;y+=size){
+      for (let x=0;x<w;x+=size){
+        if (((x/size) + (y/size)) % 2 === 0) ctx.fillRect(x,y,size,size);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawHandles(ctx, c){
+    const hs = HANDLE;
+    const pts = handlePoints(c);
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,.95)";
+    ctx.strokeStyle = "rgba(0,0,0,.35)";
+    ctx.lineWidth = 1;
+    for (const p of pts){
+      ctx.beginPath();
+      ctx.rect(p.x - hs/2, p.y - hs/2, hs, hs);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function handlePoints(c){
+    const x1 = c.x, y1 = c.y;
+    const x2 = c.x + c.w, y2 = c.y + c.h;
+    const xm = c.x + c.w/2, ym = c.y + c.h/2;
+    return [
+      {id:"nw", x:x1, y:y1},
+      {id:"n",  x:xm, y:y1},
+      {id:"ne", x:x2, y:y1},
+      {id:"e",  x:x2, y:ym},
+      {id:"se", x:x2, y:y2},
+      {id:"s",  x:xm, y:y2},
+      {id:"sw", x:x1, y:y2},
+      {id:"w",  x:x1, y:ym},
+    ];
+  }
+
+  function hitTestHandle(px, py){
+    const pts = handlePoints(state.crop);
+    for (const p of pts){
+      if (Math.abs(px - p.x) <= HIT && Math.abs(py - p.y) <= HIT) return p.id;
+    }
+    return null;
+  }
+
+  function pointInRect(px, py, r){
+    return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+  }
+
+  function setCursorForPointer(px, py){
+    if (!state.img) { stage.style.cursor = "default"; return; }
+    const h = hitTestHandle(px, py);
+    if (h){
+      const map = { n:"ns-resize", s:"ns-resize", e:"ew-resize", w:"ew-resize", nw:"nwse-resize", se:"nwse-resize", ne:"nesw-resize", sw:"nesw-resize" };
+      stage.style.cursor = map[h] || "pointer";
+      return;
+    }
+    if (pointInRect(px, py, state.crop)) stage.style.cursor = "move";
+    else stage.style.cursor = "grab";
+  }
+
+  function enforceAspectDuringResize(next, handle, fromCenter, keepSquare){
+    const arLocked = parseAspect(aspect.value);
+    const ar = keepSquare ? 1 : (arLocked || null);
+    if (!ar) return next;
+
+    let {x,y,w,h} = next;
+    if (w < MIN_CROP || h < MIN_CROP) return next;
+
+    const current = w / h;
+    const adjustW = current > ar;
+
+    if (adjustW) w = h * ar;
+    else h = w / ar;
+
+    const right = x + next.w;
+    const bottom = y + next.h;
+
+    if (fromCenter){
+      const cx = x + next.w/2;
+      const cy = y + next.h/2;
+      x = cx - w/2;
+      y = cy - h/2;
+    } else {
+      if (handle.includes("w")) x = right - w;
+      if (handle.includes("n")) y = bottom - h;
+    }
+
+    return {x,y,w,h};
+  }
+
+  function clampCropToView(c){
+    c.w = clamp(c.w, MIN_CROP, state.viewW - 20);
+    c.h = clamp(c.h, MIN_CROP, state.viewH - 20);
+    c.x = clamp(c.x, 10, state.viewW - c.w - 10);
+    c.y = clamp(c.y, 10, state.viewH - c.h - 10);
+    return c;
+  }
+
+  function ensureImageCoversCrop(){
+    if (!state.img) return;
+    const c = state.crop;
+    const dispW = state.srcW * state.baseScale * state.zoomFactor;
+    const dispH = state.srcH * state.baseScale * state.zoomFactor;
+
+    const minX = c.x + c.w - dispW;
+    const maxX = c.x;
+    const minY = c.y + c.h - dispH;
+    const maxY = c.y;
+
+    state.imgX = clamp(state.imgX, minX, maxX);
+    state.imgY = clamp(state.imgY, minY, maxY);
+  }
+
+  function onPointerDown(e){
+    if (!state.img) return;
+    stage.focus();
+
+    const pt = getLocalPoint(e);
+    const handle = hitTestHandle(pt.x, pt.y);
+
+    state.pointerDown = true;
+    state.start = {
+      x: pt.x, y: pt.y,
+      crop: {...state.crop},
+      imgX: state.imgX,
+      imgY: state.imgY,
+      handle
+    };
+
+    if (handle){
+      state.dragMode = "resize";
+      state.resizeHandle = handle;
+    } else if (pointInRect(pt.x, pt.y, state.crop)){
+      state.dragMode = "moveCrop";
+    } else {
+      state.dragMode = "moveImage";
+      stage.style.cursor = "grabbing";
+    }
+
+    stage.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+
+  function onPointerMove(e){
+    const pt = getLocalPoint(e);
+    setCursorForPointer(pt.x, pt.y);
+
+    if (!state.pointerDown || !state.start || !state.img) return;
+
+    const dx = pt.x - state.start.x;
+    const dy = pt.y - state.start.y;
+
+    if (state.dragMode === "moveCrop"){
+      state.crop.x = state.start.crop.x + dx;
+      state.crop.y = state.start.crop.y + dy;
+      clampCropToView(state.crop);
+      ensureImageCoversCrop();
+      draw();
+      invalidateExport();
+      return;
+    }
+
+    if (state.dragMode === "moveImage"){
+      state.imgX = state.start.imgX + dx;
+      state.imgY = state.start.imgY + dy;
+      ensureImageCoversCrop();
+      draw();
+      invalidateExport();
+      return;
+    }
+
+    if (state.dragMode === "resize"){
+      const c0 = state.start.crop;
+      const h = state.resizeHandle;
+
+      let x = c0.x, y = c0.y, w = c0.w, hh = c0.h;
+      const fromCenter = e.altKey;
+      const keepSquare = e.shiftKey;
+
+      const x2 = c0.x + c0.w;
+      const y2 = c0.y + c0.h;
+
+      function applySide(side, delta){
+        if (side === "w") x = c0.x + delta;
+        if (side === "n") y = c0.y + delta;
+        if (side === "e") w = c0.w + delta;
+        if (side === "s") hh = c0.h + delta;
+      }
+
+      if (h.includes("w")) applySide("w", dx);
+      if (h.includes("n")) applySide("n", dy);
+      if (h.includes("e")) applySide("e", dx);
+      if (h.includes("s")) applySide("s", dy);
+
+      if (h.includes("w")) w = x2 - x;
+      if (h.includes("n")) hh = y2 - y;
+
+      if (fromCenter){
+        const cx = c0.x + c0.w/2;
+        const cy = c0.y + c0.h/2;
+        w = c0.w + (h.includes("w") || h.includes("e") ? dx*2 : 0);
+        hh = c0.h + (h.includes("n") || h.includes("s") ? dy*2 : 0);
+        x = cx - w/2;
+        y = cy - hh/2;
+      }
+
+      w = Math.max(MIN_CROP, w);
+      hh = Math.max(MIN_CROP, hh);
+
+      let next = {x,y,w,h:hh};
+      next = enforceAspectDuringResize(next, h, fromCenter, keepSquare);
+      next = clampCropToView(next);
+
+      state.crop.x = next.x;
+      state.crop.y = next.y;
+      state.crop.w = next.w;
+      state.crop.h = next.h;
+
+      ensureImageCoversCrop();
+      draw();
+      invalidateExport();
+      return;
+    }
+  }
+
+  function onPointerUp(e){
+    if (!state.pointerDown) return;
+    state.pointerDown = false;
+    state.dragMode = null;
+    state.resizeHandle = null;
+    state.start = null;
+    try{ stage.releasePointerCapture(e.pointerId); }catch{}
+    draw();
+  }
+
+  function getLocalPoint(e){
+    const r = stage.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  function onWheel(e){
+    if (!state.img) return;
+    const pt = getLocalPoint(e);
+    const prev = state.zoomFactor;
+
+    const delta = -e.deltaY;
+    const factor = delta > 0 ? 1.06 : 1/1.06;
+    const next = clamp(prev * factor, 0.1, 4);
+
+    zoom.value = String(Math.round(next * 100));
+    setZoomFromSlider();
+
+    const dispW0 = state.srcW * state.baseScale * prev;
+    const dispH0 = state.srcH * state.baseScale * prev;
+    const dispW1 = state.srcW * state.baseScale * state.zoomFactor;
+    const dispH1 = state.srcH * state.baseScale * state.zoomFactor;
+
+    const rx = (pt.x - state.imgX) / dispW0;
+    const ry = (pt.y - state.imgY) / dispH0;
+
+    state.imgX = pt.x - rx * dispW1;
+    state.imgY = pt.y - ry * dispH1;
+
+    ensureImageCoversCrop();
+    draw();
+    invalidateExport();
+    e.preventDefault();
+  }
+
+  async function exportBlob(){
+    if (!state.img) return null;
+
+    const c = state.crop;
+    const dispW = state.srcW * state.baseScale * state.zoomFactor;
+    const dispH = state.srcH * state.baseScale * state.zoomFactor;
+
+    const sx = (c.x - state.imgX) / dispW * state.srcW;
+    const sy = (c.y - state.imgY) / dispH * state.srcH;
+    const sw = (c.w / dispW) * state.srcW;
+    const sh = (c.h / dispH) * state.srcH;
+
+    const csx = clamp(sx, 0, state.srcW);
+    const csy = clamp(sy, 0, state.srcH);
+    const csw = clamp(sw, 1, state.srcW - csx);
+    const csh = clamp(sh, 1, state.srcH - csy);
+
+    const ow = Math.max(1, Math.floor(state.outW));
+    const oh = Math.max(1, Math.floor(state.outH));
+
+    const out = document.createElement("canvas");
+    out.width = ow;
+    out.height = oh;
+    const octx = out.getContext("2d", { alpha: true });
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = "high";
+
+    if (fmt.value === "image/jpeg"){
+      octx.fillStyle = "#ffffff";
+      octx.fillRect(0,0,ow,oh);
+    }
+
+    const src = state.imgBitmap || state.img;
+    octx.drawImage(src, csx, csy, csw, csh, 0, 0, ow, oh);
+
+    const type = fmt.value;
+    const q = clamp(Number(quality.value || 92) / 100, 0.4, 1);
+
+    const blob = await new Promise((resolve) => {
+      if (out.toBlob) out.toBlob((b) => resolve(b), type, q);
+      else resolve(dataUrlToBlob(out.toDataURL(type, q)));
+    });
+
+    return blob;
+  }
+
+  function dataUrlToBlob(dataUrl){
+    const parts = dataUrl.split(",");
+    const mime = parts[0].match(/:(.*?);/)[1];
+    const bstr = atob(parts[1]);
+    let n = bstr.length;
+    const u8 = new Uint8Array(n);
+    while (n--) u8[n] = bstr.charCodeAt(n);
+    return new Blob([u8], { type: mime });
+  }
+
+  function downloadBlob(blob){
+    const ext = fmt.value === "image/png" ? "png" : (fmt.value === "image/jpeg" ? "jpg" : "webp");
+    const name = `crop_${state.outW}x${state.outH}.${ext}`;
+    const url = URL.createObjectURL(blob);
+    state.lastUrl = url;
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  fileEl.addEventListener("change", async () => {
+    const f = fileEl.files && fileEl.files[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      setStatus("That file doesn't look like an image.", true);
+      return;
+    }
+    await loadImageFromBlob(f);
+    fileEl.value = "";
+  });
+
+  btnPaste.addEventListener("click", async () => {
+    try {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        setStatus("Clipboard image paste isn't supported in this browser. Try Ctrl/Cmd+V or drag & drop.", true);
+        return;
+      }
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find(t => t.startsWith("image/"));
+        if (!type) continue;
+        const blob = await item.getType(type);
+        await loadImageFromBlob(blob);
+        return;
+      }
+      setStatus("No image found on the clipboard.", true);
+    } catch {
+      setStatus("Clipboard access was blocked. Try Ctrl/Cmd+V or drag & drop.", true);
+    }
+  });
+
+  window.addEventListener("paste", async (e) => {
+    if (!e.clipboardData) return;
+    const items = Array.from(e.clipboardData.items || []);
+    const imgItem = items.find(it => it.type && it.type.startsWith("image/"));
+    if (!imgItem) return;
+    const blob = imgItem.getAsFile();
+    if (blob) await loadImageFromBlob(blob);
+  });
+
+  btnFit.addEventListener("click", () => fitImageToCrop(true));
+  btnCenter.addEventListener("click", () => centerCrop());
+  btnReset.addEventListener("click", () => resetAll());
+
+  zoom.addEventListener("input", () => setZoomFromSlider());
+
+  fmt.addEventListener("change", () => { updateQualityVisibility(); invalidateExport(); });
+  quality.addEventListener("input", () => { qualityVal.textContent = String(Math.round(Number(quality.value||92))); invalidateExport(); });
+
+  aspect.addEventListener("change", () => {
+    const v = aspect.value;
+    customAspectField.style.display = v === "custom" ? "block" : "none";
+    applyAspectToCrop("center");
+    if (state.keepAspect) syncOutputFromInputs("w");
+    draw();
+    invalidateExport();
+  });
+  [aspectW, aspectH].forEach(el => el.addEventListener("input", () => {
+    if (aspect.value !== "custom") return;
+    applyAspectToCrop("center");
+    if (state.keepAspect) syncOutputFromInputs("w");
+    draw();
+    invalidateExport();
+  }));
+
+  modeExact.addEventListener("click", () => setKeepAspect(false));
+  modeKeep.addEventListener("click", () => setKeepAspect(true));
+
+  outW.addEventListener("input", () => syncOutputFromInputs("w"));
+  outH.addEventListener("input", () => syncOutputFromInputs("h"));
+
+  stage.addEventListener("pointerdown", onPointerDown);
+  stage.addEventListener("pointermove", onPointerMove);
+  stage.addEventListener("pointerup", onPointerUp);
+  stage.addEventListener("pointercancel", onPointerUp);
+  stage.addEventListener("wheel", onWheel, { passive:false });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT")) return;
+    if (e.key === "f" || e.key === "F") fitImageToCrop(true);
+    if (e.key === "c" || e.key === "C") centerCrop();
+  });
+
+  stage.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    stage.style.outline = "2px solid rgba(110,168,255,.55)";
+    stage.style.outlineOffset = "-2px";
+  });
+  stage.addEventListener("dragleave", () => {
+    stage.style.outline = "none";
+  });
+  stage.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    stage.style.outline = "none";
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      setStatus("Dropped file isn't an image.", true);
+      return;
+    }
+    await loadImageFromBlob(f);
+  });
+
+  btnExport.addEventListener("click", async () => {
+    if (!state.img) return;
+    btnExport.disabled = true;
+    setStatus("Rendering export…");
+    try{
+      const blob = await exportBlob();
+      if (!blob) {
+        setStatus("Export failed.", true);
+        return;
+      }
+      state.lastBlob = blob;
+      btnDownload.disabled = false;
+      setStatus(`Ready: ${Math.round(blob.size/1024)} KB (${fmt.options[fmt.selectedIndex].text})`);
+    } catch {
+      setStatus("Export failed.", true);
+    } finally {
+      btnExport.disabled = false;
+    }
+  });
+
+  btnDownload.addEventListener("click", () => {
+    if (!state.lastBlob) {
+      setStatus("Click Export first.", true);
+      return;
+    }
+    downloadBlob(state.lastBlob);
+    setStatus("Downloaded.");
+  });
+
+  const ro = new ResizeObserver(() => resizeCanvasToStage());
+  ro.observe(stage);
+
+  updateQualityVisibility();
+  qualityVal.textContent = String(Math.round(Number(quality.value||92)));
+  setZoomFromSlider();
+  resizeCanvasToStage();
+  resetAll();
+
+})();
+</script>
+</body>
+</html>
