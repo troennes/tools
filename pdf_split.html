@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PDF Split (Keep Pages)</title>
+  <style>
+    :root{
+      --bg:#0b1020; --card:#121a33; --card2:#0f1730; --text:#e9ecff; --muted:#a9b2da;
+      --border:rgba(255,255,255,.12); --accent:#7aa2ff; --danger:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background:radial-gradient(1200px 600px at 20% 0%, #16224a 0%, var(--bg) 60%);
+      color:var(--text);
+    }
+    .wrap{max-width:1100px;margin:28px auto;padding:0 16px}
+    h1{margin:0 0 6px;font-size:22px;letter-spacing:.2px}
+    .sub{margin:0 0 18px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns: 1.1fr .9fr;gap:14px}
+    @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      overflow:hidden;
+    }
+    .card header{
+      padding:14px 14px 12px;
+      border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      background:rgba(0,0,0,.10);
+    }
+    .card header .title{font-weight:650}
+    .card .body{padding:14px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .row > *{flex:0 0 auto}
+    .spacer{flex:1 1 auto}
+    label{color:var(--muted)}
+    input[type="file"]{max-width:100%}
+    input[type="text"]{
+      background:rgba(0,0,0,.20);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      min-width:260px;
+      outline:none;
+    }
+    input[type="text"]:focus{border-color:rgba(122,162,255,.55); box-shadow:0 0 0 3px rgba(122,162,255,.15)}
+    button{
+      background:rgba(122,162,255,.18);
+      color:var(--text);
+      border:1px solid rgba(122,162,255,.35);
+      border-radius:12px;
+      padding:10px 12px;
+      cursor:pointer;
+      transition:.12s transform ease, .12s background ease;
+      user-select:none;
+    }
+    button:hover{background:rgba(122,162,255,.26)}
+    button:active{transform:translateY(1px)}
+    button.secondary{background:rgba(255,255,255,.06);border-color:var(--border)}
+    button.danger{background:rgba(255,107,107,.14);border-color:rgba(255,107,107,.35)}
+    button:disabled{opacity:.55;cursor:not-allowed}
+
+    .drop{
+      border:1px dashed rgba(255,255,255,.25);
+      border-radius:14px;
+      padding:18px;
+      background:rgba(0,0,0,.14);
+      display:flex;align-items:center;justify-content:center;
+      min-height:86px;
+      text-align:center;
+      color:var(--muted);
+    }
+    .drop.drag{border-color:rgba(122,162,255,.75); box-shadow:0 0 0 3px rgba(122,162,255,.15); color:var(--text)}
+
+    .meta{color:var(--muted);font-size:13px}
+    .meta strong{color:var(--text)}
+    .error{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(255,107,107,.35);
+      background:rgba(255,107,107,.12);
+      color:#ffd7d7;
+      display:none;
+      white-space:pre-wrap;
+    }
+
+    .pages{
+      max-height:520px;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px;
+      background:rgba(0,0,0,.14);
+    }
+    .pageGrid{
+      display:grid;
+      grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+      gap:10px;
+    }
+    .pageItem{
+      border:1px solid rgba(255,255,255,.10);
+      background:rgba(255,255,255,.05);
+      border-radius:12px;
+      padding:10px 10px 8px;
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .pageItem input{transform:scale(1.15)}
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      padding:6px 8px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.16);
+      border-radius:999px;
+    }
+    .footerNote{margin-top:10px;color:var(--muted);font-size:12px}
+    .kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;padding:2px 6px;border:1px solid rgba(255,255,255,.18);border-bottom-color:rgba(255,255,255,.10);border-radius:8px;background:rgba(0,0,0,.18)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Split PDF (Keep Selected Pages)</h1>
+    <p class="sub">Load a PDF, tick the pages you want to keep, then export a new PDF.</p>
+
+    <div class="grid">
+      <section class="card">
+        <header>
+          <div class="title">1) Load PDF</div>
+          <div class="pill" id="statusPill">No file loaded</div>
+        </header>
+        <div class="body">
+          <div class="row">
+            <input id="file" type="file" accept="application/pdf" />
+            <div class="spacer"></div>
+            <button id="clear" class="danger" disabled>Clear</button>
+          </div>
+
+          <div class="drop" id="drop">
+            Drag &amp; drop a PDF here<br />
+            <span class="meta">Or use the file picker above</span>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <div class="meta" id="meta">
+              Pages: <strong>—</strong> &nbsp; • &nbsp; Selected: <strong>—</strong>
+            </div>
+          </div>
+
+          <div class="error" id="err"></div>
+
+          <div class="footerNote">
+            Tip: You can also paste a range like <span class="kbd">1,3-5,10</span> and apply it.
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <header>
+          <div class="title">2) Select Pages</div>
+          <div class="row">
+            <button id="all" class="secondary" disabled>Select all</button>
+            <button id="none" class="secondary" disabled>Select none</button>
+            <button id="invert" class="secondary" disabled>Invert</button>
+          </div>
+        </header>
+        <div class="body">
+          <div class="row" style="margin-bottom:10px">
+            <label for="range">Keep pages:</label>
+            <input id="range" type="text" placeholder="e.g. 1,3-5,10" disabled />
+            <button id="applyRange" disabled>Apply</button>
+          </div>
+
+          <div class="pages" id="pagesWrap">
+            <div class="pageGrid" id="pageGrid"></div>
+          </div>
+
+          <div class="row" style="margin-top:12px">
+            <button id="export" disabled>Export kept pages</button>
+            <div class="spacer"></div>
+            <span class="meta" id="exportMeta"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PDF-LIB -->
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+
+    const fileEl = $("file");
+    const dropEl = $("drop");
+    const clearBtn = $("clear");
+    const statusPill = $("statusPill");
+    const errEl = $("err");
+    const metaEl = $("meta");
+    const pageGrid = $("pageGrid");
+    const pagesWrap = $("pagesWrap");
+
+    const allBtn = $("all");
+    const noneBtn = $("none");
+    const invertBtn = $("invert");
+
+    const rangeEl = $("range");
+    const applyRangeBtn = $("applyRange");
+
+    const exportBtn = $("export");
+    const exportMeta = $("exportMeta");
+
+    let srcBytes = null;
+    let srcDoc = null;
+    let srcName = "document.pdf";
+    let pageCount = 0;
+    let checks = [];
+
+    function setError(msg) {
+      if (!msg) { errEl.style.display = "none"; errEl.textContent = ""; return; }
+      errEl.style.display = "block";
+      errEl.textContent = msg;
+    }
+
+    function setEnabled(loaded) {
+      clearBtn.disabled = !loaded;
+      allBtn.disabled = !loaded;
+      noneBtn.disabled = !loaded;
+      invertBtn.disabled = !loaded;
+      rangeEl.disabled = !loaded;
+      applyRangeBtn.disabled = !loaded;
+      exportBtn.disabled = !loaded;
+    }
+
+    function updateMeta() {
+      const selected = checks.reduce((acc, c) => acc + (c.checked ? 1 : 0), 0);
+      metaEl.innerHTML = `Pages: <strong>${pageCount || "—"}</strong> &nbsp; • &nbsp; Selected: <strong>${pageCount ? selected : "—"}</strong>`;
+      exportBtn.disabled = !(srcDoc && selected > 0);
+      exportMeta.textContent = (srcDoc && selected > 0) ? `${selected} page(s) will be exported` : "";
+      statusPill.textContent = srcDoc ? "Loaded" : "No file loaded";
+    }
+
+    function clearAll() {
+      srcBytes = null;
+      srcDoc = null;
+      srcName = "document.pdf";
+      pageCount = 0;
+      checks = [];
+      pageGrid.innerHTML = "";
+      fileEl.value = "";
+      rangeEl.value = "";
+      setError("");
+      setEnabled(false);
+      updateMeta();
+      statusPill.textContent = "No file loaded";
+    }
+
+    function parsePageSpec(spec, maxPage) {
+      // Returns a sorted unique array of 0-based indices
+      const s = (spec || "").trim();
+      if (!s) return [];
+      const out = new Set();
+
+      const parts = s.split(",").map(p => p.trim()).filter(Boolean);
+      for (const part of parts) {
+        // "n" or "a-b"
+        const m = part.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (m) {
+          let a = parseInt(m[1], 10);
+          let b = parseInt(m[2], 10);
+          if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+          if (a > b) [a, b] = [b, a];
+          if (a < 1 || b > maxPage) throw new Error(`Range "${part}" is out of bounds (1-${maxPage}).`);
+          for (let n = a; n <= b; n++) out.add(n - 1);
+          continue;
+        }
+        const n = parseInt(part, 10);
+        if (!Number.isFinite(n)) throw new Error(`Invalid token "${part}". Use e.g. 1,3-5,10`);
+        if (n < 1 || n > maxPage) throw new Error(`Page "${n}" is out of bounds (1-${maxPage}).`);
+        out.add(n - 1);
+      }
+      return Array.from(out).sort((a,b) => a - b);
+    }
+
+    function applySelection(indicesToKeep) {
+      const keep = new Set(indicesToKeep);
+      for (let i = 0; i < checks.length; i++) {
+        checks[i].checked = keep.has(i);
+      }
+      updateMeta();
+    }
+
+    function buildPageGrid(n) {
+      pageGrid.innerHTML = "";
+      checks = [];
+      const frag = document.createDocumentFragment();
+
+      for (let i = 0; i < n; i++) {
+        const item = document.createElement("label");
+        item.className = "pageItem";
+        item.title = `Page ${i+1}`;
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = true; // default: keep all
+        cb.addEventListener("change", updateMeta);
+
+        const txt = document.createElement("div");
+        txt.style.display = "flex";
+        txt.style.flexDirection = "column";
+        txt.style.gap = "2px";
+
+        const top = document.createElement("div");
+        top.textContent = `Page ${i+1}`;
+        top.style.fontWeight = "650";
+
+        const small = document.createElement("div");
+        small.className = "meta";
+        small.textContent = "Keep";
+
+        txt.appendChild(top);
+        txt.appendChild(small);
+
+        item.appendChild(cb);
+        item.appendChild(txt);
+
+        frag.appendChild(item);
+        checks.push(cb);
+      }
+      pageGrid.appendChild(frag);
+      updateMeta();
+    }
+
+    async function loadPdfFromFile(file) {
+      setError("");
+      if (!file) return;
+
+      if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+        setError("Please choose a PDF file.");
+        return;
+      }
+
+      try {
+        srcName = file.name || "document.pdf";
+        srcBytes = await file.arrayBuffer();
+
+        // pdf-lib
+        const { PDFDocument } = PDFLib;
+        srcDoc = await PDFDocument.load(srcBytes, { ignoreEncryption: false });
+
+        pageCount = srcDoc.getPageCount();
+        if (!pageCount) throw new Error("This PDF has zero pages.");
+
+        buildPageGrid(pageCount);
+        setEnabled(true);
+        updateMeta();
+        statusPill.textContent = `Loaded • ${pageCount} page(s)`;
+      } catch (e) {
+        clearAll();
+        setError(String(e?.message || e));
+      }
+    }
+
+    async function exportKeptPages() {
+      setError("");
+      try {
+        if (!srcDoc) throw new Error("Load a PDF first.");
+
+        const indices = [];
+        for (let i = 0; i < checks.length; i++) {
+          if (checks[i].checked) indices.push(i);
+        }
+        if (indices.length === 0) throw new Error("Select at least one page to keep.");
+
+        const { PDFDocument } = PDFLib;
+        const outDoc = await PDFDocument.create();
+
+        const copied = await outDoc.copyPages(srcDoc, indices);
+        copied.forEach(p => outDoc.addPage(p));
+
+        const outBytes = await outDoc.save();
+
+        const base = srcName.replace(/\.pdf$/i, "");
+        const suffix = indices.length === pageCount ? "copy" : `pages-${indices.map(i => i+1).slice(0,8).join("_")}${indices.length>8 ? "-etc" : ""}`;
+        const outName = `${base}__${suffix}.pdf`;
+
+        const blob = new Blob([outBytes], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = outName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      } catch (e) {
+        setError(String(e?.message || e));
+      }
+    }
+
+    // Events
+    fileEl.addEventListener("change", (e) => loadPdfFromFile(e.target.files?.[0]));
+
+    clearBtn.addEventListener("click", clearAll);
+
+    allBtn.addEventListener("click", () => { checks.forEach(c => c.checked = true); updateMeta(); });
+    noneBtn.addEventListener("click", () => { checks.forEach(c => c.checked = false); updateMeta(); });
+    invertBtn.addEventListener("click", () => { checks.forEach(c => c.checked = !c.checked); updateMeta(); });
+
+    applyRangeBtn.addEventListener("click", () => {
+      try {
+        setError("");
+        const indices = parsePageSpec(rangeEl.value, pageCount);
+        if (indices.length === 0) throw new Error("Enter at least one page number (e.g. 1,3-5,10).");
+        applySelection(indices);
+      } catch (e) {
+        setError(String(e?.message || e));
+      }
+    });
+
+    rangeEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") applyRangeBtn.click();
+    });
+
+    exportBtn.addEventListener("click", exportKeptPages);
+
+    // Drag & Drop
+    ;["dragenter","dragover"].forEach(ev => {
+      dropEl.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropEl.classList.add("drag");
+      });
+    });
+    ;["dragleave","drop"].forEach(ev => {
+      dropEl.addEventListener(ev, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropEl.classList.remove("drag");
+      });
+    });
+    dropEl.addEventListener("drop", (e) => {
+      const f = e.dataTransfer?.files?.[0];
+      if (f) loadPdfFromFile(f);
+    });
+
+    // Init
+    clearAll();
+  </script>
+</body>
+</html>
