@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hash Text or File</title>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#0f1731; --panel2:#0c1228;
+      --text:#e9eeff; --muted:#aab3d6; --faint:#7f89b3;
+      --line:#27315a; --line2:#1d2547;
+      --accent:#7aa2ff; --accent2:#9bffd5; --danger:#ff6b6b;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --r:16px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans);
+      background: radial-gradient(900px 520px at 25% 10%, rgba(122,162,255,.22), transparent 60%),
+                  radial-gradient(900px 520px at 80% 20%, rgba(155,255,213,.16), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{max-width:1100px; margin:34px auto; padding:0 16px 28px;}
+    header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:14px;}
+    h1{margin:0; font-size:22px; letter-spacing:.2px}
+    .sub{color:var(--muted); font-size:13px; margin-top:6px;}
+    .grid{display:grid; grid-template-columns: 1.2fr .8fr; gap:14px;}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr;}}
+
+    .card{background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line2); border-radius:var(--r); box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{padding:14px 14px 10px; border-bottom:1px solid var(--line2); display:flex; justify-content:space-between; align-items:center; gap:10px;}
+    .card .hd h2{margin:0; font-size:14px; color:var(--muted); font-weight:650; letter-spacing:.2px}
+    .card .bd{padding:14px;}
+
+    textarea{
+      width:100%; height:220px; resize:vertical; min-height:140px; max-height:520px;
+      border-radius:14px; border:1px solid var(--line);
+      background: var(--panel2);
+      color:var(--text);
+      font-family:var(--mono);
+      font-size:13px; line-height:1.45;
+      padding:12px;
+      outline:none;
+    }
+    textarea:focus{border-color:rgba(122,162,255,.7); box-shadow: 0 0 0 4px rgba(122,162,255,.12);}
+
+    .row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:650;
+      font-size:13px;
+    }
+    .btn:hover{border-color:rgba(122,162,255,.55)}
+    .btn.primary{background: linear-gradient(180deg, rgba(122,162,255,.22), rgba(122,162,255,.08)); border-color: rgba(122,162,255,.55)}
+    .btn.ghost{background: transparent}
+    .btn.danger{background: rgba(255,107,107,.10); border-color: rgba(255,107,107,.40)}
+    .btn:disabled{opacity:.55; cursor:not-allowed}
+
+    .pill{
+      font-family:var(--mono);
+      font-size:12px;
+      color:var(--muted);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line2);
+      background: rgba(0,0,0,.12);
+    }
+
+    .filebox{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+    input[type=file]{
+      width:100%;
+      border:1px dashed var(--line);
+      background: rgba(255,255,255,.03);
+      padding:10px;
+      border-radius:14px;
+      color:var(--muted);
+    }
+
+    .opts{display:grid; grid-template-columns: 1fr 1fr; gap:8px 12px;}
+    @media (max-width: 520px){ .opts{grid-template-columns:1fr;}}
+
+    label.opt{
+      display:flex; align-items:center; gap:8px;
+      padding:10px 10px;
+      border:1px solid var(--line2);
+      border-radius:14px;
+      background: rgba(0,0,0,.10);
+      cursor:pointer;
+      user-select:none;
+    }
+    label.opt:hover{border-color:rgba(122,162,255,.45)}
+    label.opt input{transform: translateY(1px)}
+    .opt .nm{font-weight:700}
+    .opt .meta{color:var(--faint); font-size:12px; font-family:var(--mono)}
+
+    details{border:1px solid var(--line2); border-radius:14px; padding:10px 10px; background: rgba(0,0,0,.08)}
+    summary{cursor:pointer; color:var(--muted); font-weight:700}
+
+    .note{color:var(--muted); font-size:13px; line-height:1.45}
+    .note code{font-family:var(--mono); font-size:12px; color:var(--text)}
+
+    .status{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      color:var(--muted);
+      font-size:13px;
+      margin-top:10px;
+    }
+    progress{width:220px; height:10px; border-radius:999px; overflow:hidden}
+    progress::-webkit-progress-bar{background: rgba(255,255,255,.06)}
+    progress::-webkit-progress-value{background: rgba(122,162,255,.75)}
+
+    table{width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:14px; border:1px solid var(--line2)}
+    th,td{padding:10px 10px; border-bottom:1px solid var(--line2); vertical-align:top}
+    th{background: rgba(255,255,255,.04); text-align:left; font-size:12px; color:var(--muted); letter-spacing:.2px}
+    tr:last-child td{border-bottom:none}
+    td.alg{white-space:nowrap; font-family:var(--mono); font-size:12px; color:var(--muted)}
+    td.out{font-family:var(--mono); font-size:12px; word-break:break-all}
+    td.act{white-space:nowrap; width:1%}
+
+    .mini{padding:7px 10px; border-radius:12px; border:1px solid var(--line); background: rgba(255,255,255,.04); color:var(--text); cursor:pointer; font-weight:700; font-size:12px}
+    .mini:hover{border-color:rgba(122,162,255,.55)}
+
+    .warn{color: #ffd28a}
+    .err{color: #ff9b9b}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Hash text or file</h1>
+        <div class="sub">Compute common checksums and cryptographic hashes locally in your browser.</div>
+      </div>
+      <div class="pill" id="srcPill">Source: text</div>
+    </header>
+
+    <div class="grid">
+      <section class="card">
+        <div class="hd">
+          <h2>Input</h2>
+          <div class="controls">
+            <button class="btn ghost" id="useTextBtn" title="Use the text box">Use text</button>
+            <button class="btn ghost" id="useFileBtn" title="Use the selected file">Use file</button>
+            <button class="btn danger" id="clearBtn" title="Clear inputs">Clear</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="row" style="margin-bottom:10px">
+            <div class="note">Text is encoded as <code>UTF-8</code>. Files are read as raw bytes.</div>
+            <div class="pill" id="sizePill">0 bytes</div>
+          </div>
+
+          <textarea id="text" spellcheck="false" placeholder="Type or paste text here…">Hello, world!</textarea>
+
+          <div style="height:12px"></div>
+
+          <div class="filebox">
+            <input id="file" type="file" />
+            <div class="pill" id="filePill">No file selected</div>
+          </div>
+
+          <div class="status">
+            <button class="btn primary" id="computeBtn">Compute</button>
+            <button class="btn" id="copyAllBtn" title="Copy all results">Copy all</button>
+            <progress id="prog" value="0" max="1" style="display:none"></progress>
+            <span id="statusText"></span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="card">
+        <div class="hd">
+          <h2>Algorithms</h2>
+          <div class="controls">
+            <button class="mini" id="presetMinimal">Minimal</button>
+            <button class="mini" id="presetCommon">Common</button>
+            <button class="mini" id="presetAll">All</button>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="note" style="margin-bottom:10px">
+            Pick what to compute <b>before</b> hitting Compute.
+          </div>
+
+          <div class="opts" id="optsCommon"></div>
+
+          <div style="height:10px"></div>
+
+          <details>
+            <summary>More options</summary>
+            <div style="height:10px"></div>
+            <div class="opts" id="optsMore"></div>
+            <div style="height:10px"></div>
+            <div class="note">
+              Notes: <span class="warn">MD5 and SHA-1 are broken for collision resistance</span> (still useful for legacy checks).<br>
+              <code>cksum</code> is a POSIX CRC-32 with length.
+            </div>
+          </details>
+        </div>
+      </aside>
+    </div>
+
+    <div style="height:14px"></div>
+
+    <section class="card">
+      <div class="hd">
+        <h2>Results</h2>
+        <div class="pill" id="resPill">—</div>
+      </div>
+      <div class="bd">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:1%">Algorithm</th>
+              <th>Output</th>
+              <th style="width:1%">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td class="alg">—</td><td class="out">No results yet.</td><td class="act"></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // --------- tiny helpers ---------
+    const $ = (id) => document.getElementById(id);
+    const enc = new TextEncoder();
+
+    function fmtBytes(n){
+      if (!Number.isFinite(n) || n < 0) return "0 bytes";
+      const u = ["bytes","KB","MB","GB","TB"];
+      let i = 0; let x = n;
+      while (x >= 1024 && i < u.length-1){ x /= 1024; i++; }
+      const digits = i === 0 ? 0 : (x < 10 ? 2 : x < 100 ? 1 : 0);
+      return `${x.toFixed(digits)} ${u[i]}`;
+    }
+
+    function toHex(u8){
+      let s = "";
+      for (let i=0;i<u8.length;i++) s += u8[i].toString(16).padStart(2,"0");
+      return s;
+    }
+
+    function u32ToHexBE(words, bytes){
+      const out = new Uint8Array(bytes);
+      for (let i=0;i<bytes/4;i++){
+        const w = words[i] >>> 0;
+        out[i*4+0] = (w>>>24)&255;
+        out[i*4+1] = (w>>>16)&255;
+        out[i*4+2] = (w>>>8)&255;
+        out[i*4+3] = (w)&255;
+      }
+      return toHex(out);
+    }
+
+    async function subtleDigest(alg, dataU8){
+      const buf = await crypto.subtle.digest(alg, dataU8);
+      return toHex(new Uint8Array(buf));
+    }
+
+    async function copyText(text){
+      try{
+        await navigator.clipboard.writeText(text);
+        return true;
+      }catch{
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try{ document.execCommand('copy'); }catch{}
+        document.body.removeChild(ta);
+        return true;
+      }
+    }
+
+    // --------- cksum (POSIX CRC-32 + length) ---------
+    const CRC32_TAB = (() => {
+      const t = new Uint32Array(256);
+      for (let i=0;i<256;i++){
+        let c = (i<<24) >>> 0;
+        for (let k=0;k<8;k++){
+          c = (c & 0x80000000) ? (((c<<1) ^ 0x04C11DB7) >>> 0) : ((c<<1)>>>0);
+        }
+        t[i] = c >>> 0;
+      }
+      return t;
+    })();
+
+    function cksumPosix(u8){
+      let crc = 0 >>> 0;
+      for (let i=0;i<u8.length;i++){
+        const idx = ((crc>>>24) ^ u8[i]) & 0xFF;
+        crc = (CRC32_TAB[idx] ^ ((crc<<8)>>>0)) >>> 0;
+      }
+      let len = u8.length >>> 0;
+      let n = len;
+      while (n > 0){
+        const b = n & 0xFF;
+        const idx = ((crc>>>24) ^ b) & 0xFF;
+        crc = (CRC32_TAB[idx] ^ ((crc<<8)>>>0)) >>> 0;
+        n = Math.floor(n / 256);
+      }
+      crc = (~crc) >>> 0;
+      return `${crc} ${len}`;
+    }
+
+    // --------- MD5 ---------
+    function md5Hex(u8){
+      const origLen = u8.length;
+      const bitLenLo = (origLen * 8) >>> 0;
+      const bitLenHi = Math.floor((origLen * 8) / 0x100000000) >>> 0;
+
+      const padLen = ((56 - ((origLen + 1) % 64)) + 64) % 64;
+      const total = origLen + 1 + padLen + 8;
+      const buf = new Uint8Array(total);
+      buf.set(u8);
+      buf[origLen] = 0x80;
+      buf[total-8] = bitLenLo & 255;
+      buf[total-7] = (bitLenLo>>>8)&255;
+      buf[total-6] = (bitLenLo>>>16)&255;
+      buf[total-5] = (bitLenLo>>>24)&255;
+      buf[total-4] = bitLenHi & 255;
+      buf[total-3] = (bitLenHi>>>8)&255;
+      buf[total-2] = (bitLenHi>>>16)&255;
+      buf[total-1] = (bitLenHi>>>24)&255;
+
+      let a0 = 0x67452301|0, b0 = 0xefcdab89|0, c0 = 0x98badcfe|0, d0 = 0x10325476|0;
+      const T = MD5_T;
+
+      for (let off=0; off<buf.length; off+=64){
+        let A=a0|0, B=b0|0, C=c0|0, D=d0|0;
+        const X = new Int32Array(16);
+        for (let i=0;i<16;i++){
+          const j = off + i*4;
+          X[i] = (buf[j] | (buf[j+1]<<8) | (buf[j+2]<<16) | (buf[j+3]<<24)) | 0;
+        }
+
+        A = ff(A,B,C,D,X[0], 7, T[0]);
+        D = ff(D,A,B,C,X[1],12, T[1]);
+        C = ff(C,D,A,B,X[2],17, T[2]);
+        B = ff(B,C,D,A,X[3],22, T[3]);
+        A = ff(A,B,C,D,X[4], 7, T[4]);
+        D = ff(D,A,B,C,X[5],12, T[5]);
+        C = ff(C,D,A,B,X[6],17, T[6]);
+        B = ff(B,C,D,A,X[7],22, T[7]);
+        A = ff(A,B,C,D,X[8], 7, T[8]);
+        D = ff(D,A,B,C,X[9],12, T[9]);
+        C = ff(C,D,A,B,X[10],17,T[10]);
+        B = ff(B,C,D,A,X[11],22,T[11]);
+        A = ff(A,B,C,D,X[12], 7,T[12]);
+        D = ff(D,A,B,C,X[13],12,T[13]);
+        C = ff(C,D,A,B,X[14],17,T[14]);
+        B = ff(B,C,D,A,X[15],22,T[15]);
+
+        A = gg(A,B,C,D,X[1], 5, T[16]);
+        D = gg(D,A,B,C,X[6], 9, T[17]);
+        C = gg(C,D,A,B,X[11],14,T[18]);
+        B = gg(B,C,D,A,X[0],20, T[19]);
+        A = gg(A,B,C,D,X[5], 5, T[20]);
+        D = gg(D,A,B,C,X[10], 9,T[21]);
+        C = gg(C,D,A,B,X[15],14,T[22]);
+        B = gg(B,C,D,A,X[4],20, T[23]);
+        A = gg(A,B,C,D,X[9], 5, T[24]);
+        D = gg(D,A,B,C,X[14], 9,T[25]);
+        C = gg(C,D,A,B,X[3],14, T[26]);
+        B = gg(B,C,D,A,X[8],20, T[27]);
+        A = gg(A,B,C,D,X[13],5, T[28]);
+        D = gg(D,A,B,C,X[2], 9, T[29]);
+        C = gg(C,D,A,B,X[7],14, T[30]);
+        B = gg(B,C,D,A,X[12],20,T[31]);
+
+        A = hh(A,B,C,D,X[5], 4, T[32]);
+        D = hh(D,A,B,C,X[8],11, T[33]);
+        C = hh(C,D,A,B,X[11],16,T[34]);
+        B = hh(B,C,D,A,X[14],23,T[35]);
+        A = hh(A,B,C,D,X[1], 4, T[36]);
+        D = hh(D,A,B,C,X[4],11, T[37]);
+        C = hh(C,D,A,B,X[7],16, T[38]);
+        B = hh(B,C,D,A,X[10],23,T[39]);
+        A = hh(A,B,C,D,X[13],4, T[40]);
+        D = hh(D,A,B,C,X[0],11, T[41]);
+        C = hh(C,D,A,B,X[3],16, T[42]);
+        B = hh(B,C,D,A,X[6],23, T[43]);
+        A = hh(A,B,C,D,X[9], 4, T[44]);
+        D = hh(D,A,B,C,X[12],11,T[45]);
+        C = hh(C,D,A,B,X[15],16,T[46]);
+        B = hh(B,C,D,A,X[2],23, T[47]);
+
+        A = ii(A,B,C,D,X[0], 6, T[48]);
+        D = ii(D,A,B,C,X[7],10, T[49]);
+        C = ii(C,D,A,B,X[14],15,T[50]);
+        B = ii(B,C,D,A,X[5],21, T[51]);
+        A = ii(A,B,C,D,X[12],6, T[52]);
+        D = ii(D,A,B,C,X[3],10, T[53]);
+        C = ii(C,D,A,B,X[10],15,T[54]);
+        B = ii(B,C,D,A,X[1],21, T[55]);
+        A = ii(A,B,C,D,X[8], 6, T[56]);
+        D = ii(D,A,B,C,X[15],10,T[57]);
+        C = ii(C,D,A,B,X[6],15, T[58]);
+        B = ii(B,C,D,A,X[13],21,T[59]);
+        A = ii(A,B,C,D,X[4], 6, T[60]);
+        D = ii(D,A,B,C,X[11],10,T[61]);
+        C = ii(C,D,A,B,X[2],15, T[62]);
+        B = ii(B,C,D,A,X[9],21, T[63]);
+
+        a0 = (a0 + A) | 0;
+        b0 = (b0 + B) | 0;
+        c0 = (c0 + C) | 0;
+        d0 = (d0 + D) | 0;
+      }
+
+      const out = new Uint8Array(16);
+      writeLE32(out, 0, a0);
+      writeLE32(out, 4, b0);
+      writeLE32(out, 8, c0);
+      writeLE32(out, 12, d0);
+      return toHex(out);
+    }
+
+    function writeLE32(u8, off, v){
+      u8[off] = v & 255;
+      u8[off+1] = (v>>>8)&255;
+      u8[off+2] = (v>>>16)&255;
+      u8[off+3] = (v>>>24)&255;
+    }
+
+    function rotl(x, n){ return (x << n) | (x >>> (32 - n)); }
+    function ff(a,b,c,d,x,s,t){ return (b + rotl((a + ((b & c) | (~b & d)) + x + t)|0, s))|0; }
+    function gg(a,b,c,d,x,s,t){ return (b + rotl((a + ((b & d) | (c & ~d)) + x + t)|0, s))|0; }
+    function hh(a,b,c,d,x,s,t){ return (b + rotl((a + (b ^ c ^ d) + x + t)|0, s))|0; }
+    function ii(a,b,c,d,x,s,t){ return (b + rotl((a + (c ^ (b | ~d)) + x + t)|0, s))|0; }
+
+    const MD5_T = (() => {
+      const T = new Int32Array(64);
+      for (let i=0;i<64;i++) T[i] = (Math.floor(Math.abs(Math.sin(i+1)) * 4294967296) | 0);
+      return T;
+    })();
+
+    // --------- SHA-224 ---------
+    const SHA256_K = new Uint32Array([
+      0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+      0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+      0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+      0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+      0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+      0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+      0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+      0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+    ]);
+
+    function sha224Hex(u8){
+      let h0 = 0xc1059ed8, h1 = 0x367cd507, h2 = 0x3070dd17, h3 = 0xf70e5939,
+          h4 = 0xffc00b31, h5 = 0x68581511, h6 = 0x64f98fa7, h7 = 0xbefa4fa4;
+
+      const l = u8.length;
+      const bitHi = Math.floor((l * 8) / 0x100000000) >>> 0;
+      const bitLo = (l * 8) >>> 0;
+      const padLen = ((56 - ((l + 1) % 64)) + 64) % 64;
+      const total = l + 1 + padLen + 8;
+      const buf = new Uint8Array(total);
+      buf.set(u8);
+      buf[l] = 0x80;
+      buf[total-8] = (bitHi>>>24)&255;
+      buf[total-7] = (bitHi>>>16)&255;
+      buf[total-6] = (bitHi>>>8)&255;
+      buf[total-5] = (bitHi)&255;
+      buf[total-4] = (bitLo>>>24)&255;
+      buf[total-3] = (bitLo>>>16)&255;
+      buf[total-2] = (bitLo>>>8)&255;
+      buf[total-1] = (bitLo)&255;
+
+      const W = new Uint32Array(64);
+      for (let off=0; off<buf.length; off+=64){
+        for (let i=0;i<16;i++){
+          const j = off + i*4;
+          W[i] = ((buf[j]<<24) | (buf[j+1]<<16) | (buf[j+2]<<8) | (buf[j+3])) >>> 0;
+        }
+        for (let i=16;i<64;i++){
+          const s0 = rotr(W[i-15],7) ^ rotr(W[i-15],18) ^ (W[i-15]>>>3);
+          const s1 = rotr(W[i-2],17) ^ rotr(W[i-2],19) ^ (W[i-2]>>>10);
+          W[i] = (W[i-16] + s0 + W[i-7] + s1) >>> 0;
+        }
+
+        let a=h0,b=h1,c=h2,d=h3,e=h4,f=h5,g=h6,h=h7;
+        for (let i=0;i<64;i++){
+          const S1 = rotr(e,6) ^ rotr(e,11) ^ rotr(e,25);
+          const ch = (e & f) ^ (~e & g);
+          const temp1 = (h + S1 + ch + SHA256_K[i] + W[i]) >>> 0;
+          const S0 = rotr(a,2) ^ rotr(a,13) ^ rotr(a,22);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const temp2 = (S0 + maj) >>> 0;
+          h=g; g=f; f=e; e=(d + temp1)>>>0;
+          d=c; c=b; b=a; a=(temp1 + temp2)>>>0;
+        }
+
+        h0 = (h0 + a)>>>0; h1 = (h1 + b)>>>0; h2 = (h2 + c)>>>0; h3 = (h3 + d)>>>0;
+        h4 = (h4 + e)>>>0; h5 = (h5 + f)>>>0; h6 = (h6 + g)>>>0; h7 = (h7 + h)>>>0;
+      }
+
+      const words = new Uint32Array([h0,h1,h2,h3,h4,h5,h6]);
+      return u32ToHexBE(words, 28);
+    }
+
+    function rotr(x,n){ return (x>>>n) | (x<<(32-n)); }
+
+    // --------- Embedded SHA3 (js-sha3, trimmed) ---------
+    (function(){
+      "use strict";
+      var INPUT_ERROR = "input is invalid type";
+      var FINALIZE_ERROR = "finalize already called";
+      var WINDOW = typeof window === "object";
+      var root = WINDOW ? window : globalThis;
+      var ARRAY_BUFFER = typeof ArrayBuffer !== "undefined";
+      var HEX_CHARS = "0123456789abcdef".split("");
+      var KECCAK_PADDING = [1, 256, 65536, 16777216];
+      var SHIFT = [0, 8, 16, 24];
+      var RC = [
+        1, 0, 32898, 0, 32906, 2147483648, 2147516416, 2147483648,
+        32907, 0, 2147483649, 0, 2147516545, 2147483648, 32777, 2147483648,
+        138, 0, 136, 0, 2147516425, 0, 2147483658, 0,
+        2147516555, 0, 139, 2147483648, 32905, 2147483648, 32771, 2147483648,
+        32770, 2147483648, 128, 2147483648, 32778, 0, 2147483658, 2147483648,
+        2147516545, 2147483648, 32896, 2147483648, 2147483649, 0,
+        2147516424, 2147483648
+      ];
+
+      function isArray(obj){ return Array.isArray(obj); }
+      function isView(obj){ return ARRAY_BUFFER && ArrayBuffer.isView && ArrayBuffer.isView(obj); }
+
+      function formatMessage(message){
+        if (typeof message === "string") return { type: "string", value: message };
+        if (isArray(message)) return { type: "array", value: message };
+        if (ARRAY_BUFFER && (message instanceof ArrayBuffer)) return { type: "arrayBuffer", value: new Uint8Array(message) };
+        if (isView(message)) return { type: "arrayBuffer", value: new Uint8Array(message.buffer, message.byteOffset, message.byteLength) };
+        throw new Error(INPUT_ERROR);
+      }
+
+      function Keccak(bits){
+        this.blocks = [];
+        this.s = [];
+        this.padding = KECCAK_PADDING;
+        this.outputBits = bits;
+        this.reset();
+      }
+
+      Keccak.prototype.reset = function(){
+        this.blocks[0] = this.blocks[1] = this.blocks[2] = this.blocks[3] = this.blocks[4] = 0;
+        this.blocks[5] = this.blocks[6] = this.blocks[7] = this.blocks[8] = this.blocks[9] = 0;
+        this.blocks[10] = this.blocks[11] = this.blocks[12] = this.blocks[13] = this.blocks[14] = 0;
+        this.blocks[15] = this.blocks[16] = this.blocks[17] = this.blocks[18] = this.blocks[19] = 0;
+        this.blocks[20] = this.blocks[21] = this.blocks[22] = this.blocks[23] = this.blocks[24] = 0;
+        this.blockCount = 1600 - (this.outputBits << 1) >> 5;
+        this.byteCount = this.blockCount << 2;
+        this.outputBlocks = this.outputBits >> 5;
+        this.extraBytes = (this.outputBits & 31) >> 3;
+        for (var i=0;i<50;i++) this.s[i] = 0;
+        this.reset = true;
+        this.finalized = false;
+        return this;
+      };
+
+      Keccak.prototype.update = function(message){
+        if (this.finalized) throw new Error(FINALIZE_ERROR);
+        var msg = formatMessage(message);
+        var notString = msg.type !== "string";
+        var data = msg.value;
+        var blocks = this.blocks;
+        var byteCount = this.byteCount;
+        var blockCount = this.blockCount;
+        var index = 0, i, code;
+        var s = this.s;
+
+        while (index < data.length){
+          for (i = this.reset ? 0 : this.start; index < data.length && i < byteCount; ++index){
+            blocks[i >> 2] |= (notString ? data[index] : (code = data.charCodeAt(index)) < 0x80 ? code : code < 0x800 ? (0xc0 | (code >> 6)) | ((0x80 | (code & 0x3f)) << 8) : (0xe0 | (code >> 12)) | ((0x80 | ((code >> 6) & 0x3f)) << 8) | ((0x80 | (code & 0x3f)) << 16)) << SHIFT[i & 3];
+            ++i;
+          }
+          this.reset = false;
+          this.start = i;
+          if (i >= byteCount){
+            this.start = 0;
+            this.blocks = blocks;
+            for (i = 0; i < blockCount; ++i){
+              s[i] ^= blocks[i];
+              blocks[i] = 0;
+            }
+            f(s);
+            this.reset = true;
+          }
+        }
+        return this;
+      };
+
+      Keccak.prototype.finalize = function(){
+        if (this.finalized) return;
+        this.finalized = true;
+        var blocks = this.blocks;
+        var s = this.s;
+        var blockCount = this.blockCount;
+        var byteCount = this.byteCount;
+        var i = this.start;
+        blocks[i >> 2] |= this.padding[i & 3] << SHIFT[i & 3];
+        if (this.start === byteCount){
+          for (i = 0; i < blockCount; ++i){
+            s[i] ^= blocks[i];
+            blocks[i] = 0;
+          }
+        } else {
+          blocks[blockCount - 1] |= 0x80000000;
+          for (i = 0; i < blockCount; ++i){
+            s[i] ^= blocks[i];
+            blocks[i] = 0;
+          }
+        }
+        f(s);
+      };
+
+      Keccak.prototype.hex = function(){
+        this.finalize();
+        var s = this.s;
+        var outputBlocks = this.outputBlocks;
+        var extraBytes = this.extraBytes;
+        var hex = "", j = 0, block;
+        while (j < outputBlocks){
+          block = s[j++];
+          hex += HEX_CHARS[(block >> 4) & 0x0F] + HEX_CHARS[block & 0x0F] +
+                 HEX_CHARS[(block >> 12) & 0x0F] + HEX_CHARS[(block >> 8) & 0x0F] +
+                 HEX_CHARS[(block >> 20) & 0x0F] + HEX_CHARS[(block >> 16) & 0x0F] +
+                 HEX_CHARS[(block >> 28) & 0x0F] + HEX_CHARS[(block >> 24) & 0x0F];
+        }
+        if (extraBytes){
+          block = s[j];
+          if (extraBytes > 0) hex += HEX_CHARS[(block >> 4) & 0x0F] + HEX_CHARS[block & 0x0F];
+          if (extraBytes > 1) hex += HEX_CHARS[(block >> 12) & 0x0F] + HEX_CHARS[(block >> 8) & 0x0F];
+          if (extraBytes > 2) hex += HEX_CHARS[(block >> 20) & 0x0F] + HEX_CHARS[(block >> 16) & 0x0F];
+        }
+        return hex;
+      };
+
+      function f(s){
+        var h, l, n, c0, c1, c2, c3, c4, c5, c6, c7, c8, c9;
+        var b0, b1, b2, b3, b4, b5, b6, b7, b8, b9;
+        var b10, b11, b12, b13, b14, b15, b16, b17, b18, b19;
+        var b20, b21, b22, b23, b24, b25, b26, b27, b28, b29;
+        var b30, b31, b32, b33, b34, b35, b36, b37, b38, b39;
+        var b40, b41, b42, b43, b44, b45, b46, b47, b48, b49;
+        for (n = 0; n < 48; n += 2){
+          c0 = s[0] ^ s[10] ^ s[20] ^ s[30] ^ s[40];
+          c1 = s[1] ^ s[11] ^ s[21] ^ s[31] ^ s[41];
+          c2 = s[2] ^ s[12] ^ s[22] ^ s[32] ^ s[42];
+          c3 = s[3] ^ s[13] ^ s[23] ^ s[33] ^ s[43];
+          c4 = s[4] ^ s[14] ^ s[24] ^ s[34] ^ s[44];
+          c5 = s[5] ^ s[15] ^ s[25] ^ s[35] ^ s[45];
+          c6 = s[6] ^ s[16] ^ s[26] ^ s[36] ^ s[46];
+          c7 = s[7] ^ s[17] ^ s[27] ^ s[37] ^ s[47];
+          c8 = s[8] ^ s[18] ^ s[28] ^ s[38] ^ s[48];
+          c9 = s[9] ^ s[19] ^ s[29] ^ s[39] ^ s[49];
+
+          h = c8 ^ ((c2 << 1) | (c3 >>> 31));
+          l = c9 ^ ((c3 << 1) | (c2 >>> 31));
+          s[0] ^= h; s[1] ^= l; s[10] ^= h; s[11] ^= l; s[20] ^= h; s[21] ^= l; s[30] ^= h; s[31] ^= l; s[40] ^= h; s[41] ^= l;
+          h = c0 ^ ((c4 << 1) | (c5 >>> 31));
+          l = c1 ^ ((c5 << 1) | (c4 >>> 31));
+          s[2] ^= h; s[3] ^= l; s[12] ^= h; s[13] ^= l; s[22] ^= h; s[23] ^= l; s[32] ^= h; s[33] ^= l; s[42] ^= h; s[43] ^= l;
+          h = c2 ^ ((c6 << 1) | (c7 >>> 31));
+          l = c3 ^ ((c7 << 1) | (c6 >>> 31));
+          s[4] ^= h; s[5] ^= l; s[14] ^= h; s[15] ^= l; s[24] ^= h; s[25] ^= l; s[34] ^= h; s[35] ^= l; s[44] ^= h; s[45] ^= l;
+          h = c4 ^ ((c8 << 1) | (c9 >>> 31));
+          l = c5 ^ ((c9 << 1) | (c8 >>> 31));
+          s[6] ^= h; s[7] ^= l; s[16] ^= h; s[17] ^= l; s[26] ^= h; s[27] ^= l; s[36] ^= h; s[37] ^= l; s[46] ^= h; s[47] ^= l;
+          h = c6 ^ ((c0 << 1) | (c1 >>> 31));
+          l = c7 ^ ((c1 << 1) | (c0 >>> 31));
+          s[8] ^= h; s[9] ^= l; s[18] ^= h; s[19] ^= l; s[28] ^= h; s[29] ^= l; s[38] ^= h; s[39] ^= l; s[48] ^= h; s[49] ^= l;
+
+          b0 = s[0]; b1 = s[1];
+          b32 = (s[11] << 4) | (s[10] >>> 28); b33 = (s[10] << 4) | (s[11] >>> 28);
+          b14 = (s[20] << 3) | (s[21] >>> 29); b15 = (s[21] << 3) | (s[20] >>> 29);
+          b46 = (s[31] << 9) | (s[30] >>> 23); b47 = (s[30] << 9) | (s[31] >>> 23);
+          b28 = (s[40] << 18) | (s[41] >>> 14); b29 = (s[41] << 18) | (s[40] >>> 14);
+
+          b20 = (s[2] << 1) | (s[3] >>> 31); b21 = (s[3] << 1) | (s[2] >>> 31);
+          b2 = (s[13] << 12) | (s[12] >>> 20); b3 = (s[12] << 12) | (s[13] >>> 20);
+          b34 = (s[22] << 10) | (s[23] >>> 22); b35 = (s[23] << 10) | (s[22] >>> 22);
+          b16 = (s[33] << 13) | (s[32] >>> 19); b17 = (s[32] << 13) | (s[33] >>> 19);
+          b48 = (s[42] << 2) | (s[43] >>> 30); b49 = (s[43] << 2) | (s[42] >>> 30);
+
+          b40 = (s[5] << 30) | (s[4] >>> 2); b41 = (s[4] << 30) | (s[5] >>> 2);
+          b22 = (s[14] << 6) | (s[15] >>> 26); b23 = (s[15] << 6) | (s[14] >>> 26);
+          b4 = (s[25] << 11) | (s[24] >>> 21); b5 = (s[24] << 11) | (s[25] >>> 21);
+          b36 = (s[34] << 15) | (s[35] >>> 17); b37 = (s[35] << 15) | (s[34] >>> 17);
+          b18 = (s[45] << 29) | (s[44] >>> 3); b19 = (s[44] << 29) | (s[45] >>> 3);
+
+          b10 = (s[6] << 28) | (s[7] >>> 4); b11 = (s[7] << 28) | (s[6] >>> 4);
+          b42 = (s[17] << 23) | (s[16] >>> 9); b43 = (s[16] << 23) | (s[17] >>> 9);
+          b24 = (s[26] << 25) | (s[27] >>> 7); b25 = (s[27] << 25) | (s[26] >>> 7);
+          b6 = (s[36] << 21) | (s[37] >>> 11); b7 = (s[37] << 21) | (s[36] >>> 11);
+          b38 = (s[47] << 24) | (s[46] >>> 8); b39 = (s[46] << 24) | (s[47] >>> 8);
+
+          b30 = (s[9] << 27) | (s[8] >>> 5); b31 = (s[8] << 27) | (s[9] >>> 5);
+          b12 = (s[18] << 20) | (s[19] >>> 12); b13 = (s[19] << 20) | (s[18] >>> 12);
+          b44 = (s[29] << 7) | (s[28] >>> 25); b45 = (s[28] << 7) | (s[29] >>> 25);
+          b26 = (s[38] << 8) | (s[39] >>> 24); b27 = (s[39] << 8) | (s[38] >>> 24);
+          b8 = (s[48] << 14) | (s[49] >>> 18); b9 = (s[49] << 14) | (s[48] >>> 18);
+
+          s[0] = b0 ^ (~b2 & b4);
+          s[1] = b1 ^ (~b3 & b5);
+          s[10] = b10 ^ (~b12 & b14);
+          s[11] = b11 ^ (~b13 & b15);
+          s[20] = b20 ^ (~b22 & b24);
+          s[21] = b21 ^ (~b23 & b25);
+          s[30] = b30 ^ (~b32 & b34);
+          s[31] = b31 ^ (~b33 & b35);
+          s[40] = b40 ^ (~b42 & b44);
+          s[41] = b41 ^ (~b43 & b45);
+
+          s[2] = b2 ^ (~b4 & b6);
+          s[3] = b3 ^ (~b5 & b7);
+          s[12] = b12 ^ (~b14 & b16);
+          s[13] = b13 ^ (~b15 & b17);
+          s[22] = b22 ^ (~b24 & b26);
+          s[23] = b23 ^ (~b25 & b27);
+          s[32] = b32 ^ (~b34 & b36);
+          s[33] = b33 ^ (~b35 & b37);
+          s[42] = b42 ^ (~b44 & b46);
+          s[43] = b43 ^ (~b45 & b47);
+
+          s[4] = b4 ^ (~b6 & b8);
+          s[5] = b5 ^ (~b7 & b9);
+          s[14] = b14 ^ (~b16 & b18);
+          s[15] = b15 ^ (~b17 & b19);
+          s[24] = b24 ^ (~b26 & b28);
+          s[25] = b25 ^ (~b27 & b29);
+          s[34] = b34 ^ (~b36 & b38);
+          s[35] = b35 ^ (~b37 & b39);
+          s[44] = b44 ^ (~b46 & b48);
+          s[45] = b45 ^ (~b47 & b49);
+
+          s[6] = b6 ^ (~b8 & b0);
+          s[7] = b7 ^ (~b9 & b1);
+          s[16] = b16 ^ (~b18 & b10);
+          s[17] = b17 ^ (~b19 & b11);
+          s[26] = b26 ^ (~b28 & b20);
+          s[27] = b27 ^ (~b29 & b21);
+          s[36] = b36 ^ (~b38 & b30);
+          s[37] = b37 ^ (~b39 & b31);
+          s[46] = b46 ^ (~b48 & b40);
+          s[47] = b47 ^ (~b49 & b41);
+
+          s[8] = b8 ^ (~b0 & b2);
+          s[9] = b9 ^ (~b1 & b3);
+          s[18] = b18 ^ (~b10 & b12);
+          s[19] = b19 ^ (~b11 & b13);
+          s[28] = b28 ^ (~b20 & b22);
+          s[29] = b29 ^ (~b21 & b23);
+          s[38] = b38 ^ (~b30 & b32);
+          s[39] = b39 ^ (~b31 & b33);
+          s[48] = b48 ^ (~b40 & b42);
+          s[49] = b49 ^ (~b41 & b43);
+
+          s[0] ^= RC[n];
+          s[1] ^= RC[n + 1];
+        }
+      }
+
+      function create(bits){
+        return function(message){
+          return (new Keccak(bits)).update(message).hex();
+        };
+      }
+
+      root.sha3_256 = create(256);
+    })();
+
+
+    // --------- UI / wiring ---------
+    const ALGS = [
+      { id: 'sha256sum', label: 'sha256sum', meta: 'SHA-256', group: 'common', checked: true },
+      { id: 'sha512sum', label: 'sha512sum', meta: 'SHA-512', group: 'common', checked: false },
+      { id: 'sha1sum', label: 'sha1sum', meta: 'SHA-1', group: 'common', checked: false },
+      { id: 'md5sum', label: 'md5sum', meta: 'MD5', group: 'common', checked: false },
+
+      { id: 'sha224sum', label: 'sha224sum', meta: 'SHA-224', group: 'more', checked: false },
+      { id: 'sha384sum', label: 'sha384sum', meta: 'SHA-384', group: 'more', checked: false },
+      { id: 'sha3sum', label: 'sha3sum', meta: 'SHA3-256', group: 'more', checked: false },
+ //     { id: 'b2sum', label: 'b2sum', meta: 'BLAKE2b-512', group: 'more', checked: false },
+      { id: 'cksum', label: 'cksum', meta: 'CRC-32 + length', group: 'more', checked: false },
+    ];
+
+    const state = { source: 'text', lastResults: [], running: false };
+
+    function mkOptRow(alg){
+      const id = `opt_${alg.id}`;
+      const lab = document.createElement('label');
+      lab.className = 'opt';
+      lab.htmlFor = id;
+      lab.innerHTML = `
+        <input type="checkbox" id="${id}">
+        <div>
+          <div class="nm">${alg.label}</div>
+          <div class="meta">${alg.meta}</div>
+        </div>
+      `;
+      const cb = lab.querySelector('input');
+      cb.checked = !!alg.checked;
+      cb.addEventListener('change', () => { alg.checked = cb.checked; });
+      return lab;
+    }
+
+    function renderOpts(){
+      const common = $('optsCommon');
+      const more = $('optsMore');
+      common.innerHTML = '';
+      more.innerHTML = '';
+      for (const a of ALGS){
+        const el = mkOptRow(a);
+        (a.group === 'common' ? common : more).appendChild(el);
+      }
+    }
+
+    function selectedAlgs(){ return ALGS.filter(a => a.checked); }
+
+    function setSource(src){
+      state.source = src;
+      $('srcPill').textContent = `Source: ${src}`;
+      $('useTextBtn').classList.toggle('primary', src === 'text');
+      $('useFileBtn').classList.toggle('primary', src === 'file');
+    }
+
+    function setSize(n){ $('sizePill').textContent = fmtBytes(n); }
+
+    function setStatus(msg, kind){
+      const el = $('statusText');
+      el.className = kind === 'err' ? 'err' : kind === 'warn' ? 'warn' : '';
+      el.textContent = msg || '';
+    }
+
+    function setRunning(r){
+      state.running = r;
+      $('computeBtn').disabled = r;
+      $('copyAllBtn').disabled = r;
+      $('clearBtn').disabled = r;
+      $('useTextBtn').disabled = r;
+      $('useFileBtn').disabled = r;
+      $('file').disabled = r;
+      $('text').disabled = r;
+    }
+
+    function resetResults(){
+      state.lastResults = [];
+      $('resPill').textContent = '—';
+      $('tbody').innerHTML = '<tr><td class="alg">—</td><td class="out">No results yet.</td><td class="act"></td></tr>';
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+
+    function renderResults(results){
+      state.lastResults = results;
+      $('resPill').textContent = `${results.length} result${results.length === 1 ? '' : 's'}`;
+      const tb = $('tbody');
+      tb.innerHTML = '';
+      for (const r of results){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="alg">${r.alg}</td>
+          <td class="out">${escapeHtml(r.value)}</td>
+          <td class="act"><button class="mini">Copy</button></td>
+        `;
+        tr.querySelector('button').addEventListener('click', async () => {
+          await copyText(r.value);
+          setStatus(`Copied ${r.alg}`, '');
+          setTimeout(() => setStatus('', ''), 900);
+        });
+        tb.appendChild(tr);
+      }
+    }
+
+    async function readCurrentInput(){
+      if (state.source === 'file'){
+        const f = $('file').files && $('file').files[0];
+        if (!f) throw new Error('No file selected.');
+        const buf = await f.arrayBuffer();
+        return new Uint8Array(buf);
+      }
+      return enc.encode($('text').value);
+    }
+
+    async function computeAlg(id, dataU8){
+      switch (id){
+        case 'md5sum': return md5Hex(dataU8);
+        case 'cksum': return cksumPosix(dataU8);
+        case 'sha1sum': return subtleDigest('SHA-1', dataU8);
+        case 'sha224sum': return sha224Hex(dataU8);
+        case 'sha256sum': return subtleDigest('SHA-256', dataU8);
+        case 'sha384sum': return subtleDigest('SHA-384', dataU8);
+        case 'sha512sum': return subtleDigest('SHA-512', dataU8);
+        case 'sha3sum': return window.sha3_256(dataU8);
+     //   case 'b2sum': return blake2bHex(dataU8);
+        default: throw new Error('Unknown algorithm');
+      }
+    }
+
+    async function compute(){
+      const picks = selectedAlgs();
+      if (picks.length === 0){
+        setStatus('Select at least one algorithm.', 'warn');
+        return;
+      }
+      setRunning(true);
+      setStatus('Preparing input…');
+      const prog = $('prog');
+      prog.style.display = 'inline-block';
+      prog.value = 0;
+
+      let data;
+      try{ data = await readCurrentInput(); }
+      catch(e){
+        setStatus(e.message || String(e), 'err');
+        prog.style.display = 'none';
+        setRunning(false);
+        return;
+      }
+
+      setSize(data.length);
+      const results = [];
+      for (let i=0;i<picks.length;i++){
+        const a = picks[i];
+        prog.value = i / Math.max(1, picks.length);
+        setStatus(`Computing ${a.label}…`);
+        try{
+          const v = await computeAlg(a.id, data);
+          results.push({ alg: a.label, value: v });
+        }catch(e){
+          results.push({ alg: a.label, value: `ERROR: ${e && e.message ? e.message : String(e)}` });
+        }
+      }
+
+      prog.value = 1;
+      setStatus(`Done (${fmtBytes(data.length)}).`);
+      setTimeout(() => setStatus('', ''), 1200);
+      prog.style.display = 'none';
+      renderResults(results);
+      setRunning(false);
+    }
+
+    function findAlg(id){
+      const a = ALGS.find(x => x.id === id);
+      if (!a) throw new Error('Missing alg: ' + id);
+      return a;
+    }
+
+    function applyPreset(which){
+      for (const a of ALGS) a.checked = false;
+      if (which === 'minimal'){
+        findAlg('sha256sum').checked = true;
+      } else if (which === 'common'){
+        findAlg('sha256sum').checked = true;
+        findAlg('sha512sum').checked = true;
+        findAlg('sha1sum').checked = true;
+      } else {
+        for (const a of ALGS) a.checked = true;
+      }
+      renderOpts();
+    }
+
+    // --------- events ---------
+    renderOpts();
+    setSource('text');
+    resetResults();
+
+    $('useTextBtn').addEventListener('click', () => setSource('text'));
+    $('useFileBtn').addEventListener('click', () => {
+      if ($('file').files && $('file').files[0]) setSource('file');
+      else setStatus('Pick a file first.', 'warn');
+    });
+
+    $('text').addEventListener('input', () => {
+      if (state.source === 'text') setSize(enc.encode($('text').value).length);
+    });
+
+    $('file').addEventListener('change', () => {
+      const f = $('file').files && $('file').files[0];
+      if (!f){
+        $('filePill').textContent = 'No file selected';
+        if (state.source === 'file') setSource('text');
+        return;
+      }
+      $('filePill').textContent = `${f.name} (${fmtBytes(f.size)})`;
+      setSize(f.size);
+      setSource('file');
+      setStatus('', '');
+    });
+
+    $('computeBtn').addEventListener('click', compute);
+
+    $('clearBtn').addEventListener('click', () => {
+      $('text').value = '';
+      $('file').value = '';
+      $('filePill').textContent = 'No file selected';
+      setSource('text');
+      setSize(0);
+      setStatus('', '');
+      resetResults();
+    });
+
+    $('copyAllBtn').addEventListener('click', async () => {
+      if (!state.lastResults.length){
+        setStatus('No results to copy.', 'warn');
+        return;
+      }
+      const joined = state.lastResults.map(r => `${r.alg}  ${r.value}`).join('\n');
+      await copyText(joined);
+      setStatus('Copied all results.', '');
+      setTimeout(() => setStatus('', ''), 900);
+    });
+
+    $('presetMinimal').addEventListener('click', () => applyPreset('minimal'));
+    $('presetCommon').addEventListener('click', () => applyPreset('common'));
+    $('presetAll').addEventListener('click', () => applyPreset('all'));
+
+    setSize(enc.encode($('text').value).length);
+  </script>
+</body>
+</html>
