@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NPK Balance Calculator v2</title>
+<style>
+  :root {
+    --bg: #f5f3ee;
+    --panel: #ffffff;
+    --ink: #1f2a1a;
+    --muted: #6b7461;
+    --border: #d9d6cc;
+    --accent: #3d6b2a;
+    --accent-soft: #e8efdf;
+    --n: #4a7ab8;
+    --p: #b86a3a;
+    --k: #7a5bb8;
+    --warn: #b8482a;
+    --ok: #3d6b2a;
+    --c1: #9b8b6a;
+    --c2: #3d6b2a;
+    --c3: #b86a3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    margin: 0;
+    padding: 24px 16px;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+  .mode-toggle {
+    display: inline-flex;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 20px;
+  }
+  .mode-toggle button {
+    background: transparent;
+    color: var(--muted);
+    border: none;
+    padding: 6px 14px;
+    font-size: 13px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .mode-toggle button.active {
+    background: var(--accent);
+    color: white;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .panel h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 14px 0;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .components-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .components-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 820px) {
+    .components-grid, .components-grid.three { grid-template-columns: 1fr; }
+  }
+  .component-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    position: relative;
+  }
+  .component-panel .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .component-panel .header h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+    color: var(--muted);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .component-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .dot-1 { background: var(--c1); }
+  .dot-2 { background: var(--c2); }
+  .dot-3 { background: var(--c3); }
+  .type-select {
+    font-size: 11px;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: #fff;
+    color: var(--muted);
+    font-family: inherit;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    padding: 7px 9px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+  .field { margin-bottom: 10px; }
+  .field:last-child { margin-bottom: 0; }
+  .preset-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    align-items: flex-end;
+  }
+  .preset-row > div { flex: 1; }
+  .preset-row button {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  .nutrient-label {
+    display: inline-block;
+    width: 14px;
+    font-weight: 700;
+    text-align: center;
+  }
+  .n-color { color: var(--n); }
+  .p-color { color: var(--p); }
+  .k-color { color: var(--k); }
+  button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  button:hover { background: #2d5220; }
+  button.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+  button.secondary:hover { background: var(--accent-soft); }
+  button.ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  button.ghost:hover { color: var(--ink); background: rgba(0,0,0,0.02); }
+  .plant-controls {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .plant-controls > div { flex: 1; min-width: 140px; }
+  .plant-controls button { flex-shrink: 0; }
+
+  .result-panel {
+    background: var(--accent-soft);
+    border: 1px solid #b9c9a4;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 8px;
+  }
+  .result-panel h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0 0 16px 0;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .mix-display {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .mix-display.two { grid-template-columns: 1fr 1fr; }
+  .mix-display.three { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 640px) {
+    .mix-display.two, .mix-display.three { grid-template-columns: 1fr; }
+  }
+  .mix-item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 14px;
+    border: 1px solid var(--border);
+  }
+  .mix-item .big {
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .mix-item .small {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .mix-item .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bar {
+    height: 22px;
+    display: flex;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 10px 0 12px 0;
+    border: 1px solid var(--border);
+  }
+  .bar-1 { background: var(--c1); }
+  .bar-2 { background: var(--c2); }
+  .bar-3 { background: var(--c3); }
+  .bar-legend {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .bar-legend span::before {
+    content: "";
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+  .legend-1::before { background: var(--c1); }
+  .legend-2::before { background: var(--c2); }
+  .legend-3::before { background: var(--c3); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+  }
+  th:first-child, td:first-child { text-align: left; }
+  th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    font-weight: 600;
+    background: rgba(0,0,0,0.02);
+  }
+  .delta-ok { color: var(--ok); }
+  .delta-warn { color: var(--warn); }
+  .delta-neutral { color: var(--muted); }
+  .note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    line-height: 1.6;
+  }
+  .error {
+    background: #f9e5df;
+    border: 1px solid #e0a898;
+    color: var(--warn);
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    margin-top: 8px;
+  }
+  .target-display {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .target-display strong { color: var(--ink); font-weight: 600; }
+  .error-score {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .error-score strong { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>NPK Balance Calculator <span style="color:var(--muted);font-weight:400;font-size:16px;">v2</span></h1>
+  <div class="subtitle">Compute the optimal mix of soil and fertilizer components. All values in g/kg (‰).</div>
+
+  <div class="mode-toggle">
+    <button id="mode2" class="active" type="button">2 components</button>
+    <button id="mode3" type="button">3 components</button>
+  </div>
+
+  <div class="panel">
+    <h2>Plant Target</h2>
+    <div class="plant-controls">
+      <div>
+        <label for="plantSelect">Preset</label>
+        <select id="plantSelect"></select>
+      </div>
+      <button class="secondary" id="savePlantBtn" type="button">Save custom plant</button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label><span class="nutrient-label n-color">N</span> Nitrogen (g/kg)</label>
+        <input type="number" id="targetN" step="0.01" min="0" value="3">
+      </div>
+      <div class="field">
+        <label><span class="nutrient-label p-color">P</span> Phosphorus (g/kg)</label>
+        <input type="number" id="targetP" step="0.01" min="0" value="1.5">
+      </div>
+      <div class="field">
+        <label><span class="nutrient-label k-color">K</span> Potassium (g/kg)</label>
+        <input type="number" id="targetK" step="0.01" min="0" value="5">
+      </div>
+    </div>
+  </div>
+
+  <div id="componentsContainer" class="components-grid"></div>
+
+  <div id="resultContainer"></div>
+</div>
+
+<script>
+// ---------- Databases ----------
+const DEFAULT_PLANTS = [
+  { name: "Potato",          n: 3.0,  p: 1.5, k: 5.0 },
+  { name: "Strawberry",      n: 1.0,  p: 0.5, k: 2.4 },
+  { name: "Asparagus",       n: 3.3,  p: 0.8, k: 2.5 },
+  { name: "Cucumber",        n: 2.8,  p: 1.8, k: 5.0 },
+  { name: "Celery",          n: 2.4,  p: 0.9, k: 3.4 },
+  { name: "Cauliflower",     n: 3.8,  p: 0.9, k: 3.8 },
+  { name: "Kale",            n: 4.0,  p: 1.4, k: 5.1 },
+  { name: "Broccoli",        n: 4.8,  p: 1.7, k: 4.9 },
+  { name: "Peas",            n: 7.7,  p: 1.7, k: 3.7 },
+  { name: "Celeri",          n: 2.0,  p: 1.5, k: 5.6 },
+  { name: "Swede (rutabaga)",n: 1.5,  p: 1.1, k: 2.6 },
+  { name: "Beetroot",        n: 2.3,  p: 0.9, k: 4.7 },
+  { name: "Lettuce",         n: 2.0,  p: 0.7, k: 3.7 },
+  { name: "Carrot",          n: 1.3,  p: 0.7, k: 4.3 },
+  { name: "Pumpkin",         n: 2.0,  p: 1.1, k: 3.1 },
+  { name: "Leek",            n: 2.5,  p: 0.7, k: 3.5 },
+  { name: "Brussels sprouts",n: 5.3,  p: 2.1, k: 5.9 },
+  { name: "Tomato",          n: 2.5,  p: 0.9, k: 5.0 },
+  { name: "Onion",           n: 2.3,  p: 0.7, k: 3.1 },
+  { name: "White cabbage",   n: 2.6,  p: 1.1, k: 6.1 },
+  { name: "Wheat",           n: 18.0, p: 8.7, k: 5.3 },
+  { name: "Chili",           n: 12.6, p: 9.1, k: 9.1 },
+];
+
+const DEFAULT_SOILS = [
+  { name: "Nutritionless soil",   n: 0,  p: 0,  k: 0 },
+  { name: "Oslo Compost (~1-1-40)", n: 0.11,  p: 0.074, k: 3.88 },
+  { name: "Flower soil",   n: 0.42,  p: 0.14,  k: 0.5 },
+  { name: "Generic plant soil",   n: 5.0,  p: 0.01,  k: 1.7 },
+
+
+];
+
+const DEFAULT_FERTILIZERS = [
+  { name: "Industrial Fertilizer 12-4-18",               n: 118,   p: 40,    k: 176  },
+  { name: "Chili Nutrient 4-3-5",                        n: 40,    p: 30,    k: 50   },
+  { name: "Organic Nutrient 4-1-5",                      n: 40,    p: 4.4,   k: 50   },
+  { name: "Chicken Manure",                              n: 40,    p: 15,    k: 20   },
+  { name: "Composted Cow Manure 2:1:5",           n: 0.8,   p: 0.5,   k: 2    },
+];
+
+let customPlants = [];
+let customSoils = [];
+let customFertilizers = [];
+
+// ---------- State ----------
+let mode = 2; // 2 or 3
+// Each component: { type: 'soil'|'fertilizer', name, n, p, k }
+let components = [
+  { type: 'soil',       name: 'Generic garden soil',   n: 0.11, p: 0.074, k: 3.88, presetIdx: 0 },
+  { type: 'fertilizer', name: 'NPK 40-15-20 (high-N)', n: 40,   p: 15,    k: 20,   presetIdx: 0 },
+  { type: 'fertilizer', name: 'NPK 10-10-10 (all-purpose)', n: 10, p: 10, k: 10,   presetIdx: 2 },
+];
+
+const els = (id) => document.getElementById(id);
+
+// ---------- Plant select ----------
+function populatePlantSelect() {
+  const sel = els("plantSelect");
+  const currentVal = sel.value;
+  sel.innerHTML = "";
+  const optCustom = document.createElement("option");
+  optCustom.value = "__custom__";
+  optCustom.textContent = "— Custom —";
+  sel.appendChild(optCustom);
+  const allPlants = [...DEFAULT_PLANTS, ...customPlants];
+  allPlants.forEach((p, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `${p.name} (${p.n}, ${p.p}, ${p.k})`;
+    sel.appendChild(opt);
+  });
+  sel.value = currentVal || "0";
+}
+
+function onPlantChange() {
+  const v = els("plantSelect").value;
+  if (v === "__custom__") return;
+  const allPlants = [...DEFAULT_PLANTS, ...customPlants];
+  const p = allPlants[parseInt(v, 10)];
+  if (!p) return;
+  els("targetN").value = p.n;
+  els("targetP").value = p.p;
+  els("targetK").value = p.k;
+  compute();
+}
+
+function onSavePlantPreset() {
+  const name = prompt("Name for this custom plant preset:");
+  if (!name) return;
+  customPlants.push({
+    name: name.trim(),
+    n: parseFloat(els("targetN").value) || 0,
+    p: parseFloat(els("targetP").value) || 0,
+    k: parseFloat(els("targetK").value) || 0,
+  });
+  populatePlantSelect();
+  els("plantSelect").value = String(DEFAULT_PLANTS.length + customPlants.length - 1);
+}
+
+// ---------- Component panels ----------
+function componentDatabase(type) {
+  if (type === 'soil') return [...DEFAULT_SOILS, ...customSoils];
+  return [...DEFAULT_FERTILIZERS, ...customFertilizers];
+}
+
+function renderComponents() {
+  const container = els("componentsContainer");
+  container.className = mode === 3 ? "components-grid three" : "components-grid";
+  container.innerHTML = "";
+
+  for (let i = 0; i < mode; i++) {
+    const c = components[i];
+    const panel = document.createElement("div");
+    panel.className = "component-panel";
+    const db = componentDatabase(c.type);
+
+    panel.innerHTML = `
+      <div class="header">
+        <h2><span class="component-dot dot-${i+1}"></span>Component ${i+1}</h2>
+        <select class="type-select" data-idx="${i}" data-role="type">
+          <option value="soil" ${c.type === 'soil' ? 'selected' : ''}>Soil</option>
+          <option value="fertilizer" ${c.type === 'fertilizer' ? 'selected' : ''}>Fertilizer</option>
+        </select>
+      </div>
+      <div class="preset-row">
+        <div>
+          <label>Preset</label>
+          <select data-idx="${i}" data-role="preset">
+            <option value="__custom__">— Custom —</option>
+            ${db.map((item, j) => `<option value="${j}" ${c.presetIdx === j ? 'selected' : ''}>${item.name}</option>`).join("")}
+          </select>
+        </div>
+        <button class="ghost" data-idx="${i}" data-role="save" type="button">Save</button>
+      </div>
+      <div class="field">
+        <label>Name</label>
+        <input type="text" data-idx="${i}" data-role="name" value="${escapeHtml(c.name)}">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label><span class="nutrient-label n-color">N</span> (g/kg)</label>
+          <input type="number" step="0.001" min="0" data-idx="${i}" data-role="n" value="${c.n}">
+        </div>
+        <div class="field">
+          <label><span class="nutrient-label p-color">P</span> (g/kg)</label>
+          <input type="number" step="0.001" min="0" data-idx="${i}" data-role="p" value="${c.p}">
+        </div>
+        <div class="field">
+          <label><span class="nutrient-label k-color">K</span> (g/kg)</label>
+          <input type="number" step="0.001" min="0" data-idx="${i}" data-role="k" value="${c.k}">
+        </div>
+      </div>
+    `;
+    container.appendChild(panel);
+  }
+
+  // Wire up events
+  container.querySelectorAll("[data-role]").forEach(el => {
+    const role = el.dataset.role;
+    const idx = parseInt(el.dataset.idx, 10);
+    if (role === "type") {
+      el.addEventListener("change", () => onTypeChange(idx, el.value));
+    } else if (role === "preset") {
+      el.addEventListener("change", () => onPresetChange(idx, el.value));
+    } else if (role === "save") {
+      el.addEventListener("click", () => onSaveComponent(idx));
+    } else if (role === "name") {
+      el.addEventListener("input", () => {
+        components[idx].name = el.value;
+        compute();
+      });
+    } else if (["n","p","k"].includes(role)) {
+      el.addEventListener("input", () => {
+        components[idx][role] = parseFloat(el.value) || 0;
+        // User edited numbers directly -> mark as custom
+        components[idx].presetIdx = null;
+        const presetSel = container.querySelector(`select[data-idx="${idx}"][data-role="preset"]`);
+        if (presetSel) presetSel.value = "__custom__";
+        compute();
+      });
+    }
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+function onTypeChange(idx, newType) {
+  components[idx].type = newType;
+  // Reset to first preset of that type
+  const db = componentDatabase(newType);
+  const first = db[0];
+  components[idx] = {
+    type: newType,
+    name: first.name,
+    n: first.n,
+    p: first.p,
+    k: first.k,
+    presetIdx: 0,
+  };
+  renderComponents();
+  compute();
+}
+
+function onPresetChange(idx, val) {
+  if (val === "__custom__") {
+    components[idx].presetIdx = null;
+    return;
+  }
+  const db = componentDatabase(components[idx].type);
+  const item = db[parseInt(val, 10)];
+  if (!item) return;
+  components[idx] = {
+    ...components[idx],
+    name: item.name,
+    n: item.n,
+    p: item.p,
+    k: item.k,
+    presetIdx: parseInt(val, 10),
+  };
+  renderComponents();
+  compute();
+}
+
+function onSaveComponent(idx) {
+  const c = components[idx];
+  const name = prompt(`Name for this custom ${c.type}:`, c.name);
+  if (!name) return;
+  const entry = { name: name.trim(), n: c.n, p: c.p, k: c.k };
+  if (c.type === 'soil') customSoils.push(entry);
+  else customFertilizers.push(entry);
+  // Point this component at the new preset
+  const db = componentDatabase(c.type);
+  components[idx].name = entry.name;
+  components[idx].presetIdx = db.length - 1;
+  renderComponents();
+  compute();
+}
+
+// ---------- Math ----------
+// Mix model: weight fractions x_i sum to 1, minimize sum over nutrients of
+// (sum_i x_i * c_i - t)^2. With constraint sum x_i = 1 and 0 <= x_i <= 1.
+
+// --- 2 components: closed form (from v1) ---
+function solve2(c1, c2, target) {
+  const a = [c2.n - c1.n, c2.p - c1.p, c2.k - c1.k];
+  const b = [c1.n - target.n, c1.p - target.p, c1.k - target.k];
+  const num = -(a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
+  const den = a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
+  if (den === 0) return null;
+  const xRaw = num / den;
+  const x2 = Math.max(0, Math.min(1, xRaw));
+  return { weights: [1 - x2, x2], unclamped: [1 - xRaw, xRaw] };
+}
+
+// --- 3 components: quadratic program ---
+// Using x3 = 1 - x1 - x2, minimize squared error wrt N, P, K.
+// For each nutrient: residual_i(x1,x2) = x1*c1_i + x2*c2_i + (1-x1-x2)*c3_i - t_i
+//                                      = x1*(c1_i - c3_i) + x2*(c2_i - c3_i) + (c3_i - t_i)
+// Let a_i = c1_i - c3_i, b_i = c2_i - c3_i, d_i = c3_i - t_i.
+// f(x1,x2) = sum_i (a_i*x1 + b_i*x2 + d_i)^2
+// df/dx1 = 2*sum_i a_i*(a_i*x1 + b_i*x2 + d_i) = 0
+// df/dx2 = 2*sum_i b_i*(a_i*x1 + b_i*x2 + d_i) = 0
+// So:  [AA AB] [x1]   [-AD]
+//      [AB BB] [x2] = [-BD]
+// where AA=sum a_i^2, BB=sum b_i^2, AB=sum a_i*b_i, AD=sum a_i*d_i, BD=sum b_i*d_i
+function solve3Unconstrained(c1, c2, c3, target) {
+  const a = [c1.n - c3.n, c1.p - c3.p, c1.k - c3.k];
+  const b = [c2.n - c3.n, c2.p - c3.p, c2.k - c3.k];
+  const d = [c3.n - target.n, c3.p - target.p, c3.k - target.k];
+  let AA=0, BB=0, AB=0, AD=0, BD=0;
+  for (let i = 0; i < 3; i++) {
+    AA += a[i]*a[i];
+    BB += b[i]*b[i];
+    AB += a[i]*b[i];
+    AD += a[i]*d[i];
+    BD += b[i]*d[i];
+  }
+  const det = AA*BB - AB*AB;
+  if (Math.abs(det) < 1e-12) return null;
+  const x1 = (-AD*BB + BD*AB) / det;
+  const x2 = (-BD*AA + AD*AB) / det;
+  const x3 = 1 - x1 - x2;
+  return [x1, x2, x3];
+}
+
+function errorAt(weights, comps, target) {
+  let en = 0, ep = 0, ek = 0;
+  for (let i = 0; i < weights.length; i++) {
+    en += weights[i] * comps[i].n;
+    ep += weights[i] * comps[i].p;
+    ek += weights[i] * comps[i].k;
+  }
+  const dn = en - target.n;
+  const dp = ep - target.p;
+  const dk = ek - target.k;
+  return dn*dn + dp*dp + dk*dk;
+}
+
+function solve3(c1, c2, c3, target) {
+  const comps = [c1, c2, c3];
+  // Try unconstrained solution first
+  const uc = solve3Unconstrained(c1, c2, c3, target);
+  if (uc && uc.every(v => v >= -1e-9 && v <= 1 + 1e-9)) {
+    const w = uc.map(v => Math.max(0, Math.min(1, v)));
+    // Re-normalize tiny rounding
+    const s = w.reduce((a,b)=>a+b,0);
+    return { weights: w.map(v => v/s), unclamped: uc };
+  }
+  // Otherwise: the unconstrained optimum is outside the simplex.
+  // The constrained optimum must lie on a boundary -> a face (one x_i = 0).
+  // Each face reduces to a 2-component problem. Try all three, pick lowest error.
+  const candidates = [];
+  // Face x3 = 0: mix of c1 & c2
+  const s12 = solve2(c1, c2, target);
+  if (s12) candidates.push({ weights: [s12.weights[0], s12.weights[1], 0] });
+  // Face x2 = 0: mix of c1 & c3
+  const s13 = solve2(c1, c3, target);
+  if (s13) candidates.push({ weights: [s13.weights[0], 0, s13.weights[1]] });
+  // Face x1 = 0: mix of c2 & c3
+  const s23 = solve2(c2, c3, target);
+  if (s23) candidates.push({ weights: [0, s23.weights[0], s23.weights[1]] });
+  // Also pure vertices
+  candidates.push({ weights: [1, 0, 0] });
+  candidates.push({ weights: [0, 1, 0] });
+  candidates.push({ weights: [0, 0, 1] });
+
+  let best = null;
+  let bestErr = Infinity;
+  for (const cand of candidates) {
+    const err = errorAt(cand.weights, comps, target);
+    if (err < bestErr) { bestErr = err; best = cand; }
+  }
+  return { weights: best.weights, unclamped: uc || null };
+}
+
+function mixAt(weights, comps) {
+  let n=0, p=0, k=0;
+  for (let i = 0; i < weights.length; i++) {
+    n += weights[i] * comps[i].n;
+    p += weights[i] * comps[i].p;
+    k += weights[i] * comps[i].k;
+  }
+  return { n, p, k };
+}
+
+function fmt(v, digits = 3) {
+  if (!isFinite(v)) return "—";
+  if (Math.abs(v) >= 100) return v.toFixed(1);
+  if (Math.abs(v) >= 10) return v.toFixed(2);
+  return v.toFixed(digits);
+}
+
+function pct(v) { return (v * 100).toFixed(1) + "%"; }
+
+function deltaClass(delta, target) {
+  if (target === 0) return Math.abs(delta) < 0.01 ? "delta-ok" : "delta-warn";
+  const rel = Math.abs(delta) / target;
+  if (rel < 0.1) return "delta-ok";
+  if (rel < 0.3) return "delta-neutral";
+  return "delta-warn";
+}
+
+// ---------- Render results ----------
+function readTarget() {
+  return {
+    n: parseFloat(els("targetN").value) || 0,
+    p: parseFloat(els("targetP").value) || 0,
+    k: parseFloat(els("targetK").value) || 0,
+  };
+}
+
+function compute() {
+  const target = readTarget();
+  const container = els("resultContainer");
+  const activeComps = components.slice(0, mode);
+
+  let solution;
+  if (mode === 2) {
+    solution = solve2(activeComps[0], activeComps[1], target);
+  } else {
+    solution = solve3(activeComps[0], activeComps[1], activeComps[2], target);
+  }
+
+  if (!solution) {
+    container.innerHTML = `<div class="error">Components are linearly dependent — no unique mix ratio can be computed. Adjust values so the components differ from one another.</div>`;
+    return;
+  }
+
+  const weights = solution.weights;
+  const mix = mixAt(weights, activeComps);
+  const dN = mix.n - target.n;
+  const dP = mix.p - target.p;
+  const dK = mix.k - target.k;
+  const totalSqErr = dN*dN + dP*dP + dK*dK;
+  const rmse = Math.sqrt(totalSqErr / 3);
+
+  // Warnings
+  let warnings = [];
+  if (solution.unclamped) {
+    const uc = solution.unclamped;
+    if (Array.isArray(uc) && uc.some(v => v < -1e-6 || v > 1 + 1e-6)) {
+      warnings.push("Ideal mix requires negative or >100% component — solution was constrained to the feasible range (boundary of the mix simplex). Consider swapping one component for something better matched to the target.");
+    }
+  }
+
+  const barSegments = weights.map((w, i) =>
+    `<div class="bar-${i+1}" style="width:${w*100}%;"></div>`
+  ).join("");
+  const legendSegments = weights.map((w, i) =>
+    `<span class="legend-${i+1}">${activeComps[i].name} (${activeComps[i].type}): ${pct(w)}</span>`
+  ).join("");
+
+  const mixItems = weights.map((w, i) => `
+    <div class="mix-item">
+      <div class="label"><span class="component-dot dot-${i+1}"></span>${escapeHtml(activeComps[i].name)}</div>
+      <div class="big">${pct(w)}</div>
+      <div class="small">${fmt(w * 1000, 1)} g per 1 kg · ${activeComps[i].type}</div>
+    </div>
+  `).join("");
+
+  container.innerHTML = `
+    <div class="result-panel">
+      <h2>Recommended Mix</h2>
+
+      <div class="target-display">
+        Target <strong>N ${fmt(target.n)}</strong> · <strong>P ${fmt(target.p)}</strong> · <strong>K ${fmt(target.k)}</strong> g/kg
+      </div>
+
+      <div class="bar">${barSegments}</div>
+      <div class="bar-legend">${legendSegments}</div>
+
+      <div class="mix-display ${mode === 3 ? 'three' : 'two'}">${mixItems}</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nutrient</th>
+            <th>Target</th>
+            <th>Resulting mix</th>
+            <th>Δ (mix − target)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="nutrient-label n-color">N</span> Nitrogen</td>
+            <td>${fmt(target.n)}</td>
+            <td>${fmt(mix.n)}</td>
+            <td class="${deltaClass(dN, target.n)}">${dN >= 0 ? "+" : ""}${fmt(dN)}</td>
+          </tr>
+          <tr>
+            <td><span class="nutrient-label p-color">P</span> Phosphorus</td>
+            <td>${fmt(target.p)}</td>
+            <td>${fmt(mix.p)}</td>
+            <td class="${deltaClass(dP, target.p)}">${dP >= 0 ? "+" : ""}${fmt(dP)}</td>
+          </tr>
+          <tr>
+            <td><span class="nutrient-label k-color">K</span> Potassium</td>
+            <td>${fmt(target.k)}</td>
+            <td>${fmt(mix.k)}</td>
+            <td class="${deltaClass(dK, target.k)}">${dK >= 0 ? "+" : ""}${fmt(dK)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="error-score">RMSE across N/P/K: <strong>${fmt(rmse)}</strong> g/kg</div>
+
+      ${warnings.length ? `<div class="error" style="margin-top:14px;">${warnings.join(" ")}</div>` : ""}
+
+      <div class="note">
+        <strong>How this works:</strong> The calculator finds the weight fractions of your ${mode} components (summing to 100%) that minimize the total squared error across N, P, and K. With 2 components this is a closed-form least-squares fit; with 3 components it's a constrained quadratic program solved analytically — first an unconstrained 2×2 linear system, and if that falls outside the valid simplex (any weight negative or &gt;1), the optimum is found on the boundary by comparing all three 2-component sub-problems and the pure vertices. Adding a third component can only match or improve on the 2-component result. All inputs are in g/kg (= ‰ by mass).
+      </div>
+    </div>
+  `;
+}
+
+// ---------- Mode toggle ----------
+function setMode(m) {
+  mode = m;
+  els("mode2").classList.toggle("active", m === 2);
+  els("mode3").classList.toggle("active", m === 3);
+  renderComponents();
+  compute();
+}
+
+// ---------- Init ----------
+document.addEventListener("DOMContentLoaded", () => {
+  populatePlantSelect();
+  renderComponents();
+  els("plantSelect").addEventListener("change", onPlantChange);
+  els("savePlantBtn").addEventListener("click", onSavePlantPreset);
+  els("mode2").addEventListener("click", () => setMode(2));
+  els("mode3").addEventListener("click", () => setMode(3));
+  ["targetN","targetP","targetK"].forEach(id => {
+    els(id).addEventListener("input", () => {
+      els("plantSelect").value = "__custom__";
+      compute();
+    });
+  });
+  compute();
+});
+</script>
+</body>
+</html>
