@@ -1,0 +1,799 @@
+# Copi CSS
+Copi CSS is a semantic-first CSS library with modern defaults and composable layout primitives.
+Copi CSS is designed so plain HTML already looks good, while a small set of classes handles layout, component patterns, and modifiers.
+
+## Copi CSS install notes
+1. Load the built stylesheet from `dist/copi.css`.
+2. Do not assume Tailwind, Bootstrap, or JavaScript component plugins exist. Copi CSS is plain CSS.
+3. Customize the system primarily through CSS custom properties, especially the semantic tokens in the theme layer.
+4. The library is built around semantic HTML first, layouts second, and components/modifiers third.
+
+## Copi CSS usage rules
+1. Prefer semantic HTML before adding classes. Many patterns are intentionally styled through native elements alone.
+2. Use documented layout classes for composition: `.flow`, `.cluster`, `.container`, `.grid`, `.repel`, `.switcher`, and `.sidebar` when available in examples.
+3. Use documented component classes only where they exist, such as `.card`, `.alert`, `.badge`, `.pill`, `.avatar`, `.dropdown`, `.tooltip`, and `.skeleton`.
+4. Use semantic state and structure attributes where the library expects them: `role="button"`, `role="group"`, `aria-current="page"`, `aria-invalid`, `aria-busy`, `aria-disabled`, `aria-description`, and native attributes like `open`, `disabled`, `readonly`, `multiple`, and `popover`.
+5. Do not invent large component APIs. If a pattern is not described here, build it from semantic HTML plus layout primitives and a small amount of project CSS.
+6. Prefer theme-token overrides over component-specific overrides. Change shared variables first, then override a specific component only if necessary.
+7. Automatic vertical rhythm already exists in several places. Avoid stacking extra margin utilities or wrapping everything in `.flow` without reason.
+8. When a link should behave visually like a button, use `role="button"` and button modifiers rather than styling a plain text link as a pseudo-button.
+9. For forms, use the native HTML control pattern first. Copi CSS styles labels, helper text, validation state, and grouped controls around semantic form markup.
+10. For navigation, breadcrumbs, pagination, dropdown menus, accordions, and modals, prefer the native HTML structures described below instead of custom JavaScript widgets.
+
+## Customization model
+1. Copi CSS is configured through custom properties.
+2. The most important token groups are:
+   `--size-*` for type scale,
+   `--space-*` and `--gap` for spacing,
+   `--flow-space*` for vertical rhythm,
+   `--content-width` and `--main-width` for widths,
+   `--border-radius-*`, `--border-width`, and `--shadow-*` for shape and depth,
+   `--color-*` for semantic colors.
+3. Most components consume semantic tokens instead of hard-coded values. If you change a token like `--color-primary`, buttons, links, alerts, badges, and focus styles should update together.
+4. Raw palette values can be Radix-style color scales, but agents should think in semantic roles such as text, surface, border, primary, accent, warning, success, and danger.
+5. If the design only needs a global shift in tone, density, spacing, width, radii, or typography, modify tokens instead of writing new component CSS.
+
+## Escape valves with custom properties
+Copi CSS is designed to be adjusted with local custom properties when the default class behavior is close but not exact. Use these escape valves to tune an existing pattern without inventing a new component variant.
+
+Rules:
+1. Prefer local custom-property overrides over ad hoc extra classes for one-off adjustments.
+2. Prefer semantic token values like `var(--space-s)` or `var(--flow-space-loose)` over hard-coded numbers when possible.
+3. If the same inline override appears repeatedly, move it into project CSS.
+4. Use escape valves to tune spacing, sizing, widths, breakpoints, and padding. Keep the documented HTML structure and class API intact.
+5. Most useful escape valves affect layout density and component fit, not brand-level color system changes.
+
+Common escape valves:
+- `--flow-space` for stacked spacing
+- `--gap` for layout gaps
+- `--cluster-horizontal-alignment` and `--cluster-vertical-alignment` for cluster alignment
+- `--switcher-breakpoint` for stack threshold
+- `--grid-min-size` for minimum card/item width
+- `--card-padding` for card interior density
+- `--avatar-size` for avatar sizing
+- `--sidebar-target-width` for sidebar/media-object split
+- `--content-width` and `--main-width` for wrapper widths
+
+Example: remove vertical spacing in a single flow container
+```html
+<article class="flow" style="--flow-space: 0;">
+  <h2>Compact panel</h2>
+  <p>No gap between direct children.</p>
+</article>
+```
+
+Example: tighten and center a cluster
+```html
+<div class="cluster" style="--gap: var(--space-2xs); --cluster-horizontal-alignment: center;">
+  <span class="badge">Docs</span>
+  <span class="badge">API</span>
+  <span class="badge">Guides</span>
+</div>
+```
+
+Example: make a switcher stack earlier
+```html
+<div class="switcher" style="--switcher-breakpoint: 24rem; --gap: var(--space-s);">
+  <section>Plan A</section>
+  <section>Plan B</section>
+</div>
+```
+
+Example: make grid items wider
+```html
+<div class="grid" style="--gap: var(--space-s); --grid-min-size: 14rem;">
+  <article class="card">One</article>
+  <article class="card">Two</article>
+  <article class="card">Three</article>
+</div>
+```
+
+Example: reduce card padding without creating a new card variant
+```html
+<article class="card" style="--card-padding: var(--space-s);">
+  <h2>Compact card</h2>
+  <p>Same component, denser interior spacing.</p>
+</article>
+```
+
+Example: create a custom avatar size
+```html
+<figure class="avatar" style="--avatar-size: 5rem;">KC</figure>
+```
+
+Example: tune the sidebar split
+```html
+<div class="sidebar" style="--sidebar-target-width: 128px;">
+  <figure class="avatar">AB</figure>
+  <div class="flow">
+    <h2>Alex Brown</h2>
+    <p>Profile summary text.</p>
+  </div>
+</div>
+```
+
+## Project-specific CSS in `project.css`
+Copi CSS is intentionally not meant to contain every possible app block or marketing pattern. When a UI need is specific to one product or repeats as a product-level pattern, put it in a project stylesheet such as `project.css`.
+
+Use `project.css` for:
+1. App-specific blocks like `.hero`, `.pricing-comparison`, `.dashboard-stat`, `.product-card`, or `.site-header`.
+2. Small wrappers around Copi primitives where your project needs a named pattern.
+3. Repeated escape-valve overrides that should become a reusable project-level class.
+4. Brand-specific presentation that should not become part of the shared Copi API.
+
+Do not use `project.css` for:
+1. Rewriting core Copi element defaults unless you truly want to replace the library behavior.
+2. Creating a second utility framework.
+3. Forking shared primitives when a token change or local custom property would solve the problem.
+
+Recommended approach:
+1. Start with semantic HTML and Copi defaults.
+2. Add one or two Copi layout/component classes as needed.
+3. Use local custom-property escape valves for one-off adjustments.
+4. When the pattern becomes project-specific or reusable, promote it into `project.css`.
+
+Example: project-level card variation
+```css
+.team-card {
+  --card-padding: var(--space-s);
+}
+```
+
+```html
+<article class="card team-card">
+  <div class="sidebar" style="--sidebar-target-width: 5rem;">
+    <figure class="avatar">KC</figure>
+    <div class="flow tight">
+      <h2>Kim Carter</h2>
+      <p>Design systems engineer</p>
+    </div>
+  </div>
+</article>
+```
+
+Example: project hero built from Copi primitives
+```css
+.hero {
+  --flow-space: var(--flow-space-loose);
+  padding-block: var(--space-2xl);
+}
+
+.hero-actions {
+  --gap: var(--space-s);
+}
+```
+
+```html
+<section class="hero flow container slim">
+  <p class="eyebrow">New release</p>
+  <h1>Build semantic interfaces faster</h1>
+  <p class="lead">Copi CSS provides semantic defaults, layouts, and lightweight components.</p>
+  <div class="cluster hero-actions">
+    <a href="#" role="button">Get started</a>
+    <a href="#" class="secondary">Read docs</a>
+  </div>
+</section>
+```
+
+## Semantic defaults
+1. Plain text content is styled by default. Headings, paragraphs, lists, blockquotes, `hr`, inline text semantics, code, keyboard keys, sample output, captions, and tables all have built-in presentation.
+2. Classless `main`, `article`, and `section` receive automatic vertical flow between direct children.
+3. A top-level `header` and `footer` as direct children of `body` receive automatic page-shell styling.
+4. Plain `nav` can be used for certain built-in navigation patterns, especially top navigation.
+5. Forms and fieldsets already provide consistent vertical rhythm for labels, controls, helper text, and actions.
+6. Use a class on a semantic section when you want to opt out of default classless flow behavior and manage spacing manually.
+
+## Layout primitives
+Are based on Every Layout and [CUBE CSS Boilerplate](https://github.com/Set-Creative-Studio/cube-boilerplate)
+
+### `.flow`
+Use `.flow` on a parent to create consistent vertical spacing between direct children. 
+Default implementation: `.flow > * + * {margin-top: 1em}`
+
+Rules:
+- Best for article sections, card bodies, modal bodies, stacked metadata, and settings panels.
+- Override spacing with `--flow-space`.
+- `.flow.tight` makes the spacing denser.
+- `.flow.loose` makes the spacing more spacious.
+- Built-in flow already exists on classless `main`, `article`, and `section`, and in several components such as cards and alerts.
+
+Example:
+```html
+<section class="flow">
+  <h2>Title</h2>
+  <p>Intro paragraph.</p>
+  <button>Continue</button>
+</section>
+```
+
+### `.cluster`
+Use `.cluster` for horizontal groups that wrap naturally.
+Default implementation uses horizontal flex and flex-wrap.
+
+Rules:
+- Good for tag rows, button toolbars, filters, compact metadata, and mixed inline controls.
+- Children stay in a horizontal row until wrapping is needed.
+- Customize with `--gap`, `--cluster-horizontal-alignment`, and `--cluster-vertical-alignment`.
+
+Example:
+```html
+<div class="cluster">
+  <button>All</button>
+  <button>Open</button>
+  <button>Closed</button>
+</div>
+```
+
+### `.container`
+Use `.container` to center content and apply horizontal gutters and a maximum width.
+
+Rules:
+- `.container` is the default page-width wrapper.
+- `.container.slim` is for narrower reading width.
+- `.container.full` spans the available width without the standard max-width cap.
+- Width behavior is driven by `--main-width` and `--content-width`.
+
+Example:
+```html
+<main class="container slim">
+  <article>
+    <h1>Documentation</h1>
+    <p>Readable long-form content.</p>
+  </article>
+</main>
+```
+
+### `.grid`
+Use `.grid` for responsive columns that wrap based on available space.
+Default implementation uses `grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr))`
+
+Rules:
+- Good for cards, feature lists, galleries, and evenly distributed blocks.
+- Customize with `--gap`, `--grid-min-size`, and `--grid-placement`.
+- `.halves` and `.thirds` are preset variants for common column patterns.
+
+Example:
+```html
+<div class="grid thirds">
+  <article>One</article>
+  <article>Two</article>
+  <article>Three</article>
+</div>
+```
+
+### `.repel`
+Use `.repel` when content should push to opposite sides of a row.
+Default implementation is horizontal flex with `justify-content: space-between`.
+
+Rules:
+- Good for headers, action bars, list item controls, and summary rows.
+- Wrapping is supported by default.
+- Use `--gap` to control spacing when wrapped.
+- Use `--repel-vertical-alignment` for cross-axis alignment.
+- Add `.nowrap` if wrapping should be prevented.
+
+Example:
+```html
+<div class="repel">
+  <strong>Project</strong>
+  <a href="#">View details</a>
+</div>
+```
+
+### `.switcher`
+Use `.switcher` for item groups that sit in a row when there is space and stack vertically when there is not.
+
+Rules:
+- Good for pricing tiers, summaries, comparison blocks, and mixed promo cards.
+- Customize with `--switcher-breakpoint`, `--gap`, and `--switcher-vertical-alignment`.
+
+Example:
+```html
+<div class="switcher">
+  <section>Starter</section>
+  <section>Team</section>
+  <section>Enterprise</section>
+</div>
+```
+
+### `.sidebar`
+Use `.sidebar` when one item should act like a narrow side column and the other like flexible content.
+
+Rules:
+- Good for media-object rows, profile summaries, avatar/content layouts, and documentation sidebars.
+- Often paired with `.avatar`, `.card`, or form/help layouts.
+- Use `--sidebar-target-width` when the side column should hold a specific width.
+
+Example:
+```html
+<div class="sidebar">
+  <figure class="avatar">AB</figure>
+  <div class="flow">
+    <h2>Alex Brown</h2>
+    <p>Design systems engineer.</p>
+  </div>
+</div>
+```
+
+## Content patterns
+
+### Typography
+Copi CSS styles common document content by default.
+
+Rules:
+- Use semantic headings `h1` through `h6`.
+- Use `hgroup` for a heading plus subtitle pair.
+- `.eyebrow` is for small overline-style introductory text.
+- `.lead` is for larger introductory paragraph text under a heading.
+- Lists, blockquotes, captions, `small`, `mark`, `ins`, `del`, `abbr`, `sub`, `sup`, and similar elements are already styled semantically.
+
+### Code
+Copi CSS styles code-related content without a separate component class.
+
+Rules:
+- Use `code` for inline code fragments.
+- Use `kbd` for key labels.
+- Use `samp` for command or program output.
+- Use `<pre><code>` for code blocks.
+- Code blocks get a distinct surface and horizontal scrolling automatically.
+
+### Buttons
+Buttons apply to native buttons (`<button>`), button-like inputs, and elements with `role="button"`.
+
+Supported modifiers:
+- Tone: `.accent`, `.danger`, `.success`, `.warning`, `.info`, `.contrast`, `.neutral`
+- Emphasis: `.secondary`, `.tertiary`
+- Size: `.small`, `.large`
+- Width: `.block`
+
+Behavior:
+- Default button styling is the primary action style.
+- `.secondary` is the quieter secondary button treatment.
+- `.tertiary` is the lightest button treatment and is closer to a text action.
+- `.block` makes the button fill the available width.
+- Inside forms, action buttons are typically full width by default.
+- `disabled` and `aria-disabled="true"` are supported.
+
+Example:
+```html
+<button class="accent">Save</button>
+<button class="secondary">Preview</button>
+<a href="/start" role="button" class="success large">Get started</a>
+```
+
+### Links
+Plain links are styled semantically and support a few modifiers.
+
+Supported modifiers:
+- `.secondary`
+- `.tertiary`
+- `.accent`
+- `.neutral`
+
+Behavior:
+- Use plain links for inline and navigational text actions.
+- `.secondary` and `.tertiary` reduce default emphasis.
+- `.accent` changes the link tone toward the accent color.
+- `.neutral` keeps the link closer to surrounding text color.
+- If the link should look and behave like a button, use `role="button"` and the button API instead.
+
+### Tables
+Tables are styled semantically.
+
+Supported modifiers:
+- `.striped` for banded body rows
+- `.centered` for centered cell content
+- `.borderless` to remove cell borders
+
+Behavior:
+- Use semantic table structure with `caption`, `thead`, `tbody`, and `tfoot` when appropriate.
+- Tables can scroll horizontally if content is wider than the container.
+
+## Forms
+
+### General form rules
+1. Use native form markup with `label`, `input`, `textarea`, `select`, `fieldset`, `legend`, and buttons.
+2. Helper text should be placed directly after the associated control.
+3. Validation state should use `aria-invalid="false"` or `aria-invalid="true"` where explicit feedback is needed.
+4. Inside `form` and `fieldset`, Copi CSS already provides vertical spacing between controls and helper text.
+
+### Text-like inputs
+Supported input examples include:
+- `text`
+- `email`
+- `number`
+- `password`
+- `tel`
+- `url`
+- `search`
+- `date`
+- `datetime-local`
+- `month`
+- `time`
+- `color`
+- `file`
+- `range`
+- `button`
+- `submit`
+- `reset`
+
+Behavior:
+- Most text-like controls fill the available width by default.
+- Use `disabled` and `readonly` where appropriate.
+- Use `fieldset role="group"` for compact combined controls such as a search field plus submit action.
+
+### `textarea`
+Behavior:
+- Use a native `textarea` with a label.
+- It fills the available width and allows vertical resizing.
+- `.small` and `.large` are supported size modifiers.
+
+### `select`
+Behavior:
+- Use a native `select` with a label.
+- `multiple` and `optgroup` are supported as normal HTML features.
+- `.small` and `.large` are supported size modifiers.
+
+### `checkbox`
+Behavior:
+- For stacked (vertical) forms, the simplest pattern is wrapping the input inside the label.
+- For inline (horizontal) groups, use adjacent `input + label`.
+- Use `fieldset` to group related options.
+- The indeterminate state must be set with JavaScript.
+
+### `radio`
+Behavior:
+- Use `input type="radio"` with the same `name` for one-of-many choices.
+- For inline groups, use adjacent `input + label`.
+- Use `fieldset` and `legend` when the set answers one named question.
+
+### `switch`
+Behavior:
+- Use `input type="checkbox" role="switch"` for on/off settings.
+- For inline groups, use adjacent `input + label`.
+- Use `fieldset` and `legend` for grouped switch settings.
+
+## Components
+
+### Accordion
+Accordions use the native `details` and `summary` pattern.
+
+Behavior:
+- Wrap each panel in `details`.
+- Use `summary` as the interactive heading.
+- Put the panel content immediately after `summary`.
+- Use `open` on `details` to make a panel expanded by default.
+- Wrap multiple accordions in a container with `role="group"` if they should look like one connected set.
+- Add `role="button"` to `summary` if you want it to inherit button styling.
+- Add `.borderless` to `details` if the standard framed panel look should be removed.
+
+Example:
+```html
+<details>
+  <summary>What is Copi CSS?</summary>
+  <p>Copi CSS is a semantic-first CSS library.</p>
+</details>
+```
+
+### Alert
+Use `.alert` for inline feedback and status messages.
+
+Supported modifiers:
+- `.primary`
+- `.accent`
+- `.info`
+- `.warning`
+- `.success`
+- `.danger`
+
+Behavior:
+- Add `.alert` to a container.
+- Use `role="alert"` for urgent announcements that assistive tech should treat assertively.
+- Alerts support rich internal content such as headings, paragraphs, and actions.
+- Alerts already include internal flow spacing between direct children.
+
+Example:
+```html
+<div class="alert warning" role="alert">
+  Your trial ends in 2 days.
+</div>
+```
+
+### Avatar
+Use `.avatar` for compact user images or initials.
+
+Supported modifiers:
+- `.small`
+- `.large`
+- `.square`
+- `.squircle`
+
+Behavior:
+- Use a `figure` with `.avatar`.
+- Place an `img` inside for a photo avatar.
+- Plain text inside the avatar acts as initials fallback.
+- Use `--avatar-size` for custom sizing without creating a new size modifier.
+- Wrap multiple avatars in a container with `role="group"` for overlapping avatar groups.
+
+Example:
+```html
+<figure class="avatar">
+  <img src="/user.jpg" alt="Ava Carter">
+</figure>
+```
+
+### Badge and Pill
+Use `.badge` and `.pill` for small labels, status chips, and metadata markers.
+
+Supported modifiers:
+- `.primary`
+- `.accent`
+- `.info`
+- `.success`
+- `.warning`
+- `.danger`
+- `.weak`
+
+Behavior:
+- `.badge` is the rounded-rectangle style.
+- `.pill` is the fully rounded style.
+- They can be used on `span`, `a`, or `button`.
+- Interactive badges and pills get hover/focus behavior automatically.
+
+Example:
+```html
+<span class="badge success">Active</span>
+<a href="#" class="pill accent">Upgrade</a>
+```
+
+### Breadcrumb
+Breadcrumbs are styled through semantic navigation.
+
+Behavior:
+- Use `nav aria-label="Breadcrumb"`.
+- Use `ol` inside the nav.
+- Mark the current page with `aria-current="page"`.
+
+Example:
+```html
+<nav aria-label="Breadcrumb">
+  <ol>
+    <li><a href="/">Home</a></li>
+    <li><a href="/docs" aria-current="page">Docs</a></li>
+  </ol>
+</nav>
+```
+
+### Card
+Use `.card` for a raised container with border, radius, shadow, and built-in internal spacing.
+
+Behavior:
+- Use it on `article`, `section`, `div`, or sometimes `a`.
+- Use `--card-padding` to customize internal padding and density.
+- Direct child `header` and `footer` become card sections with separators.
+- A direct child `figure` bleeds edge-to-edge by default.
+- Add `.inset` to a direct child `figure` when the media should stay inside the card padding.
+- Cards already provide internal flow spacing, so extra `.flow` is often unnecessary.
+
+Example:
+```html
+<article class="card">
+  <h2>Card title</h2>
+  <p>Supporting text.</p>
+</article>
+```
+
+### Dropdown
+Dropdowns use the native Popover API.
+
+Behavior:
+- Wrap the whole pattern in `.dropdown`.
+- Use a trigger element with `popovertarget`.
+- Use a popover panel element with a matching `id` and the `popover` attribute.
+- `nav` is a good popover container for action lists.
+- Button variants can also be used on the trigger.
+- `.borderless` appears in docs as a lighter future-facing variation, so do not rely on it unless you have confirmed it behaves as needed.
+
+Example:
+```html
+<div class="dropdown">
+  <button popovertarget="menu-1">Menu</button>
+  <nav id="menu-1" popover>
+    <ul>
+      <li><a href="#">Profile</a></li>
+      <li><button>Sign out</button></li>
+    </ul>
+  </nav>
+</div>
+```
+
+### Modal
+Modals use native `dialog`.
+
+Behavior:
+- Use a `dialog` element for modal content.
+- Open with `showModal()` or with the Popover-based pattern shown by the library docs.
+- Direct child `header` and `footer` create structured sections similar to a card.
+- Modals already provide internal flow spacing, so extra `.flow` is often unnecessary.
+
+Example:
+```html
+<dialog id="confirm-dialog">
+  <header>Confirm delete</header>
+  <p>This action cannot be undone.</p>
+  <footer>
+    <button>Cancel</button>
+    <button class="danger">Delete</button>
+  </footer>
+</dialog>
+```
+
+### Navbar
+The navbar pattern is applied to plain `nav` markup rather than a special class.
+
+Behavior:
+- Use a plain `nav` with one or more direct child `ul` groups.
+- The `nav` behaves like a repelling row.
+- Each direct child `ul` behaves like a horizontal cluster.
+- This is intended for top navigation or header navigation.
+- Do not use this pattern for side menus, breadcrumbs, or pagination.
+- `nav` list children use `.repel`, and individual list items use `.cluster`
+
+Example:
+```html
+<nav>
+  <ul>
+    <li><strong>Acme</strong></li>
+  </ul>
+  <ul>
+    <li><a href="#">Docs</a></li>
+    <li><a href="#" role="button">Start</a></li>
+  </ul>
+</nav>
+```
+
+### Side menu
+The side menu pattern is semantic markup inside `aside`.
+
+Supported states:
+- `.selected`
+- `.disabled`
+
+Behavior:
+- Use `aside > nav > ul`.
+- Nest `ul` inside list items for hierarchy.
+- Use `.selected` on the current item.
+- Use `.disabled` on unavailable items.
+- `details` and `summary` can be used for collapsible menu sections.
+- Buttons, links, and summaries inside the menu inherit shared menu-item styling.
+
+Example:
+```html
+<aside>
+  <nav>
+    <ul>
+      <li class="selected"><a href="#">Overview</a></li>
+      <li><a href="#">Settings</a></li>
+    </ul>
+  </nav>
+</aside>
+```
+
+### Skeleton
+Use `.skeleton` for loading placeholders.
+
+Supported shapes:
+- `.line`
+- `.box`
+- `.circle`
+
+Behavior:
+- Add `.skeleton` plus one shape class.
+- Use `aria-hidden="true"` on the placeholder itself.
+- Use `aria-busy="true"` on the surrounding loading region when appropriate.
+- The shimmer effect is reduced automatically when reduced-motion is requested.
+
+Example:
+```html
+<article aria-busy="true">
+  <div class="skeleton line" aria-hidden="true"></div>
+  <div class="skeleton box" aria-hidden="true"></div>
+</article>
+```
+
+### Tabs
+Tabs use a pure HTML `details` pattern instead of a JavaScript tab widget.
+
+Behavior:
+- Wrap the group in an element with `role="tablist"`.
+- Set `--tabs` to the number of tabs.
+- Each tab is a `details` element with `role="tab"`.
+- Tabs in the same group should share the same `name`.
+- Set `--n` on each tab to place it in the correct tab column.
+- Use `open` on the default active tab.
+- This is not a full ARIA Tabs implementation with managed keyboard behavior, so do not claim full tabs accessibility parity with a JavaScript widget.
+
+Example:
+```html
+<div role="tablist" style="--tabs: 3;">
+  <details role="tab" name="product-tabs" style="--n: 1;" open>
+    <summary>Overview</summary>
+    <div>Overview content</div>
+  </details>
+  <details role="tab" name="product-tabs" style="--n: 2;">
+    <summary>Specs</summary>
+    <div>Specs content</div>
+  </details>
+</div>
+```
+
+### Progress and meter
+Copi CSS styles native `<progress>` and `<meter>`.
+
+Behavior:
+- Use `progress` for completion state such as uploads or loading.
+- Use `meter` for measured values within a known range.
+- Indeterminate progress bars animate unless reduced motion is requested.
+- `meter` color shifts according to its semantic range values.
+
+Example:
+```html
+<progress value="43" max="100">43%</progress>
+<meter min="0" max="100" low="30" high="80" optimum="100" value="72">72</meter>
+```
+
+### Pagination
+Pagination is styled through semantic navigation.
+
+Supported states:
+- `.disabled`
+- `aria-disabled="true"`
+- `aria-current="page"`
+
+Behavior:
+- Use `nav aria-label="Pagination"`.
+- Use a plain `ul` inside.
+- Mark the current page with `aria-current="page"`.
+- Use `.disabled` or `aria-disabled="true"` for unavailable controls.
+- Anchors, buttons, and button/link roles can be mixed as items if needed.
+
+Example:
+```html
+<nav aria-label="Pagination">
+  <ul>
+    <li><span class="disabled" aria-disabled="true">Previous</span></li>
+    <li><a href="#" aria-current="page">1</a></li>
+    <li><a href="#">2</a></li>
+    <li><a href="#">Next</a></li>
+  </ul>
+</nav>
+```
+
+### Tooltip
+Tooltips use a CSS-only pattern.
+
+Supported modifiers:
+- `.top` (default)
+- `.right`
+- `.bottom`
+- `.left`
+
+Behavior:
+- Add `.tooltip` to the target element.
+- Put the tooltip text in `aria-description`.
+- Add a placement modifier if needed. Top is the default.
+- For non-interactive inline elements, add `tabindex="0"` if keyboard users should be able to focus and reveal the tooltip.
+- Long tooltip text near viewport edges is not fully handled, so keep tooltip content short.
+
+Example:
+```html
+<button class="tooltip top" aria-description="Delete item">
+  Delete
+</button>
+```
+
+## Utility notes
+1. Utility classes exist, but Copi CSS is not utility-first.
+2. Prefer semantic markup, layout primitives, and documented component patterns before reaching for utilities.
+3. Common utility themes include spacing helpers, display helpers, text-size helpers, and a smaller set of text-color helpers.
+4. If a layout or component can be built clearly with semantic HTML plus one or two library classes, prefer that over utility-heavy markup.
