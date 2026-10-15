@@ -1,0 +1,39 @@
+/* Project theme overrides for Minium. Loaded after style.css, which stays an unmodified copy.
+   Accent: Radix green (replaces Minium's default indigo). */
+@layer tokens, theme, reset, base, layout, components, project, utilities;
+
+@layer theme {
+  :root {
+    --accent-7: light-dark(#8eceaa, #28684a);
+    --accent-9: light-dark(#30a46c, #30a46c);
+    --accent-10: light-dark(#2b9a66, #33b074);
+    --accent-11: light-dark(#218358, #3dd68c);
+    --accent-a2: light-dark(#00a32f0b, #29f99d0b);
+    --accent-a3: light-dark(#00a43319, #22ff991e);
+    --accent-a4: light-dark(#00a83829, #11ff992d);
+    --accent-a5: light-dark(#019c393b, #2bffa23c);
+    --accent-a6: light-dark(#00963c52, #44ffaa4b);
+    --accent-a7: light-dark(#00914071, #50fdac5e);
+    --accent-a11: light-dark(#00713fde, #46fea5d4);
+    --accent-text: var(--accent-11);
+    --accent-inverse: white;
+  }
+
+  @supports (color: color(display-p3 1 1 1)) {
+    @media (color-gamut: p3) {
+      :root {
+        --accent-7: light-dark(color(display-p3 0.61 0.801 0.675), color(display-p3 0.227 0.403 0.298));
+        --accent-9: light-dark(color(display-p3 0.332 0.634 0.442), color(display-p3 0.332 0.634 0.442));
+        --accent-10: light-dark(color(display-p3 0.308 0.595 0.417), color(display-p3 0.357 0.682 0.474));
+        --accent-11: light-dark(color(display-p3 0.19 0.5 0.32), color(display-p3 0.434 0.828 0.573));
+        --accent-a2: light-dark(color(display-p3 0.024 0.565 0.129 / 0.036), color(display-p3 0.341 0.98 0.616 / 0.043));
+        --accent-a3: light-dark(color(display-p3 0.012 0.596 0.145 / 0.087), color(display-p3 0.376 0.996 0.655 / 0.114));
+        --accent-a4: light-dark(color(display-p3 0.008 0.588 0.145 / 0.142), color(display-p3 0.341 0.996 0.635 / 0.173));
+        --accent-a5: light-dark(color(display-p3 0.004 0.541 0.157 / 0.204), color(display-p3 0.408 1 0.678 / 0.232));
+        --accent-a6: light-dark(color(display-p3 0.004 0.518 0.157 / 0.283), color(display-p3 0.475 1 0.706 / 0.29));
+        --accent-a7: light-dark(color(display-p3 0.004 0.486 0.165 / 0.389), color(display-p3 0.514 1 0.706 / 0.362));
+        --accent-a11: light-dark(color(display-p3 0.19 0.5 0.32), color(display-p3 0.434 0.828 0.573));
+      }
+    }
+  }
+}

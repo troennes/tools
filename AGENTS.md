@@ -15,11 +15,14 @@ The one exception is third-party libraries a tool can't reasonably do without. T
 
 ## Styling: Minium CSS v0.3.0 (`styles/style.css`)
 
-All tools (in `html/`) link the shared stylesheet:
+All tools (in `html/`) link the shared stylesheet, then the project theme:
 
 ```html
 <link rel="stylesheet" href="../styles/style.css">
+<link rel="stylesheet" href="../styles/theme.css">
 ```
+
+`styles/theme.css` holds project token overrides in `@layer theme` (currently: the accent role is Radix green instead of Minium's default indigo, including display-P3 values). Change colors there, never in `style.css`.
 
 `styles/style.css` is an unmodified copy of `dist/minium.css` from `@troennes/minium` (fonts in `styles/fonts/`). To upgrade, replace it, `styles/fonts/`, and `styles/llms.txt` from the new npm package. The full usage reference is in `styles/llms.txt`. Key points:
 
@@ -31,7 +34,7 @@ All tools (in `html/`) link the shared stylesheet:
 
 **Buttons:** default is primary (orange). Tone modifiers: `.accent`, `.danger`, `.success`, `.warning`, `.info`, `.contrast`, `.neutral`. Emphasis: `.secondary`, `.tertiary`. Use `role="button"` on links that should look like buttons.
 
-**Color tokens:** primary = orange, accent = indigo. Full semantic token set: `--color-text`, `--color-surface`, `--color-border-weak`, `--color-primary`, `--color-accent`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info`, etc.
+**Color tokens:** primary = orange, accent = green (set in `styles/theme.css`). Full semantic token set: `--color-text`, `--color-surface`, `--color-border-weak`, `--color-primary`, `--color-accent`, `--color-success`, `--color-danger`, `--color-warning`, `--color-info`, etc.
 
 **Fonts:** PT Sans (body), Inconsolata (mono) — loaded from `styles/fonts/`, no network requests needed.
 
