@@ -5,16 +5,16 @@ A personal collection of standalone browser-based tools, deployed as a static si
 ## Architecture
 
 - `index.html` — Dashboard with search/filter and links to all tools
-- Each tool is a single HTML file; JS stays inline, CSS now loads from `styles/style.css`
+- Each tool is a single HTML file in `html/`; JS stays inline, CSS now loads from `styles/style.css`
 
-Tools never share JS — each file contains all its own JavaScript. When adding a new tool, add the card to `index.html` and create a new `toolname.html`.
+Tools never share JS — each file contains all its own JavaScript. When adding a new tool, add the card to `index.html` and create a new `html/toolname.html`.
 
 ## Styling: Minium CSS v0.3.0 (`styles/style.css`)
 
-All tools link the shared stylesheet:
+All tools (in `html/`) link the shared stylesheet:
 
 ```html
-<link rel="stylesheet" href="styles/style.css">
+<link rel="stylesheet" href="../styles/style.css">
 ```
 
 `styles/style.css` is an unmodified copy of `dist/minium.css` from `@troennes/minium` (fonts in `styles/fonts/`). To upgrade, replace it, `styles/fonts/`, and `styles/llms.txt` from the new npm package. The full usage reference is in `styles/llms.txt`. Key points:
@@ -39,5 +39,5 @@ All tools link the shared stylesheet:
 
 ## Adding a New Tool
 
-1. Create `toolname.html` using Minium CSS (link `styles/style.css`, use semantic HTML + layout/component classes)
+1. Create `html/toolname.html` using Minium CSS (link `../styles/style.css`, use semantic HTML + layout/component classes)
 2. Add a card entry to the `tools` array in `index.html` with `name`, `file`, `desc`, and `keywords`
