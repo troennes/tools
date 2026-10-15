@@ -9,6 +9,10 @@ A personal collection of standalone browser-based tools, deployed as a static si
 
 Tools never share JS — each file contains all its own JavaScript. When adding a new tool, add the card to `index.html` and create a new `html/toolname.html`.
 
+The one exception is third-party libraries a tool can't reasonably do without. They are vendored in `vendor/` (never loaded from a CDN) so the site works offline and tests don't hit the network:
+
+- `vendor/pdf-lib/` — pdf-lib 1.17.1 (MIT), used by `html/pdf_split.html`. It's copied from `node_modules/pdf-lib/dist/pdf-lib.min.js` plus `LICENSE.md`; the same exact version is a dev dependency so tests can build and inspect PDFs. To upgrade, bump the version in `package.json`, `npm install`, and copy both files again.
+
 ## Styling: Minium CSS v0.3.0 (`styles/style.css`)
 
 All tools (in `html/`) link the shared stylesheet:
