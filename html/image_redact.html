@@ -7,6 +7,11 @@
   <link rel="stylesheet" href="../styles/style.css">
   <link rel="stylesheet" href="../styles/theme.css">
   <style>
+    /* Let the image use the whole window width, not just the slim column. */
+    .bleed {
+      inline-size: calc(100vw - 2 * var(--space-s-l));
+      margin-inline-start: calc(50% - 50vw + var(--space-s-l));
+    }
     .stage {
       position: relative;
       inline-size: fit-content;
@@ -77,12 +82,14 @@
       </div>
 
       <div class="flow-tight">
-        <div class="stage" id="stage">
-          <img id="img" alt="Image being edited" draggable="false">
-          <svg id="boxes" preserveAspectRatio="none" aria-hidden="true"></svg>
-          <div id="selection" hidden>
-            <span data-corner="nw"></span><span data-corner="ne"></span>
-            <span data-corner="sw"></span><span data-corner="se"></span>
+        <div class="bleed">
+          <div class="stage" id="stage">
+            <img id="img" alt="Image being edited" draggable="false">
+            <svg id="boxes" preserveAspectRatio="none" aria-hidden="true"></svg>
+            <div id="selection" hidden>
+              <span data-corner="nw"></span><span data-corner="ne"></span>
+              <span data-corner="sw"></span><span data-corner="se"></span>
+            </div>
           </div>
         </div>
         <small id="info"></small>
