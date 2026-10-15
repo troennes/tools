@@ -3,147 +3,152 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Tools</title>
+  <title>My tools collection</title>
   <link rel="stylesheet" href="styles/style.css">
   <link rel="stylesheet" href="styles/theme.css">
   <style>
-    h1 {font-size: var(--size-h3)}
-    h2 {font-size: var(--size-h4)}
-    a:has(> article) {text-decoration: none; font-weight: unset}
-    a > article:hover {background-color: var(--color-primary-fill-hover);}
-    .container {box-sizing: border-box;}
+    header h1 { font-size: var(--size-h4); }
+    .card h3 { font-size: var(--size-h4); }
+    /* Keep three equal columns even in groups with fewer cards, so card widths match across groups. */
+    main .grid.thirds { --grid-placement: auto-fill; }
+    /* Minium gives link cards display: block, which would override the hidden attribute. */
+    .card[hidden] { display: none; }
+    .search { position: relative; }
+    .search input { inline-size: 24ch; padding-inline-end: 2.5em; }
+    .search kbd {
+      position: absolute;
+      inset-inline-end: var(--space-xs);
+      inset-block-start: 50%;
+      translate: 0 -50%;
+      pointer-events: none;
+    }
+    /* The hint only shows while the box is empty and unfocused, so it never covers text or the clear button. */
+    .search:has(input:focus, input:not(:placeholder-shown)) kbd { display: none; }
   </style>
 </head>
 <body>
-  <header >
-    <nav class="container repel">
-      <hgroup>
-        <h1>Tools collection</h1>
-        <p>Quick launcher for your local utilities.</p>
-      </hgroup>
-      <div role="search" class="cluster" style="--gap: var(--space-xs);">
-        <input id="q" type="search" placeholder="Search tools…" autocomplete="off" style="width: 22ch;" />
-        <kbd title="Keyboard shortcut">/</kbd>
+  <header>
+    <nav class="container">
+      <h1>My tools collection</h1>
+      <div role="search" class="search">
+        <input id="q" type="search" class="rounded" placeholder="Search tools…" aria-label="Search tools" aria-keyshortcuts="/" autocomplete="off">
+        <kbd aria-hidden="true">/</kbd>
       </div>
     </nav>
-
   </header>
 
-  <main class="container">
-    <div class="grid thirds" id="grid" style="--flow-space: var(--flow-space-tight);" aria-label="Tool links">
+  <main class="container flow">
+    <section class="flow-tight" aria-label="Text and code">
+      <h2 class="eyebrow">Text &amp; code</h2>
+      <div class="grid thirds">
+        <a href="./html/base64.html" class="card" data-keywords="base64 encode decode encoder decoder">
+          <h3>Base64 encoder/decoder</h3>
+          <p>Convert between text and base64, or encode a file.</p>
+        </a>
+        <a href="./html/html_entities.html" class="card" data-keywords="html entities entity encoder decoder converter escape unescape">
+          <h3>HTML entity converter</h3>
+          <p>Escape text for use in HTML, or decode entities back to text.</p>
+        </a>
+        <a href="./html/minify_css.html" class="card" data-keywords="css minify minifier compress optimize beautify prettify format">
+          <h3>CSS minifier</h3>
+          <p>Minify CSS safely, or beautify minified CSS back into readable code.</p>
+        </a>
+        <a href="./html/hash_tool.html" class="card" data-keywords="hash checksum file sha1 md5 md5sum sha1sum sha256sum sha256 sha384 sha512 sha224 sha3 cksum crc verify compare">
+          <h3>Hash text or file</h3>
+          <p>Hash text or a file with SHA-256, MD5, SHA3 and more, and check it against an expected checksum.</p>
+        </a>
+        <a href="./html/animal_ipsum.html" class="card" data-keywords="lorem ipsum filler placeholder text animal facts">
+          <h3>Animal ipsum generator</h3>
+          <p>Filler text made of short, Wikipedia-style animal facts.</p>
+        </a>
+      </div>
+    </section>
 
-      <a href="./html/base64.html"><article class="card" data-keywords="base64 encode decode encoder decoder" >
-        <h2>Base 64 encoder/decoder</h2>
-        <p>Convert between text and base64, or encode a file.</p>
-      </article></a>
+    <section class="flow-tight" aria-label="Color">
+      <h2 class="eyebrow">Color</h2>
+      <div class="grid thirds">
+        <a href="./html/color_converter.html" class="card" data-keywords="color converter hex rgb rgba hsl hsla oklch oklab lab lch display-p3 p3 convert">
+          <h3>Color converter</h3>
+          <p>Convert any CSS color to Hex, RGB, HSL, OKLCH, OKLab, Lab, LCH and Display P3.</p>
+        </a>
+        <a href="./html/color-mix.html" class="card" data-keywords="color mix css color-mix playground">
+          <h3><code>color-mix()</code> playground</h3>
+          <p>Mix two colors with CSS <code>color-mix()</code> in any color space.</p>
+        </a>
+      </div>
+    </section>
 
-      <a href="./html/color-mix.html"><article class="card" data-keywords="color mix css color-mix playground">
-        <h2><code>color-mix()</code> playground</h2>
-        <p>Mix two colors with CSS <code>color-mix()</code> in any color space.</p>
-      </article></a>
+    <section class="flow-tight" aria-label="Images and PDF">
+      <h2 class="eyebrow">Images &amp; PDF</h2>
+      <div class="grid thirds">
+        <a href="./html/image_crop_resize.html" class="card" data-keywords="image photo picture crop resize scale convert png jpeg jpg webp paste">
+          <h3>Image crop and resize</h3>
+          <p>Crop and resize an image from a file or the clipboard, and save it as PNG, JPEG or WebP.</p>
+        </a>
+        <a href="./html/pdf_split.html" class="card" data-keywords="pdf split extract pages reorder reverse remove delete">
+          <h3>PDF splitter</h3>
+          <p>Keep, reorder or repeat pages of a PDF, e.g. <code>1,3-5,10</code>.</p>
+        </a>
+        <a href="./html/pdf_merge.html" class="card" data-keywords="pdf merge join combine concatenate append">
+          <h3>PDF merger</h3>
+          <p>Join two or more PDFs into one document.</p>
+        </a>
+      </div>
+    </section>
 
-      <a href="./html/color_converter.html"><article class="card" data-keywords="color converter hex rgb rgba hsl hsla oklch oklab lab lch display-p3 p3 convert">
-        <h2>Color converter</h2>
-        <p>Convert any CSS color to Hex, RGB, HSL, OKLCH, OKLab, Lab, LCH and Display P3.</p>
-      </article></a>
+    <section class="flow-tight" aria-label="Other">
+      <h2 class="eyebrow">Other</h2>
+      <div class="grid thirds">
+        <a href="./html/npk_calculator.html" class="card" data-keywords="npk soil fertilizer compost manure mix nitrogen phosphorus potassium plant garden">
+          <h3>NPK calculator</h3>
+          <p>Find the mix of soil and fertilizer that best matches a plant's N, P and K needs.</p>
+        </a>
+      </div>
+    </section>
 
-      <a href="./html/html_entities.html"><article class="card" data-keywords="html entities entity encoder decoder converter escape unescape">
-        <h2>HTML entity converter</h2>
-        <p>Escape text for use in HTML, or decode entities back to text.</p>
-      </article></a>
-
-      <a href="./html/minify_css.html"><article class="card" data-keywords="css minify minifier compress optimize beautify prettify format">
-        <h2>CSS minifier</h2>
-        <p>Minify CSS safely, or beautify minified CSS back into readable code.</p>
-      </article></a>
-
-      <a href="./html/animal_ipsum.html"><article class="card" data-keywords="lorem ipsum filler placeholder text animal facts">
-        <h2>Animal ipsum generator</h2>
-        <p>Filler text made of short, Wikipedia-style animal facts.</p>
-      </article></a>
-
-      <a href="./html/image_crop_resize.html"><article class="card" data-keywords="image photo picture crop resize scale convert png jpeg jpg webp paste">
-        <h2>Image crop &amp; resize</h2>
-        <p>Crop and resize an image from a file or the clipboard, and save it as PNG, JPEG or WebP.</p>
-      </article></a>
-
-      <a href="./html/pdf_split.html"><article class="card" data-keywords="pdf split extract pages reorder reverse remove delete">
-        <h2>PDF splitter</h2>
-        <p>Keep, reorder or repeat pages of a PDF, e.g. <code>1,3-5,10</code>.</p>
-      </article></a>
-
-      <a href="./html/pdf_merge.html"><article class="card" data-keywords="pdf merge join combine concatenate append">
-        <h2>PDF merger</h2>
-        <p>Join two or more PDFs into one document.</p>
-      </article></a>
-
-      <a href="./html/hash_tool.html"><article class="card" data-keywords="hash checksum file sha1 md5 md5sum sha1sum sha256sum sha256 sha384 sha512 sha224 sha3 cksum crc verify compare">
-        <h2>Hash generator</h2>
-        <p>Hash text or a file with SHA-256, MD5, SHA3 and more, and check it against an expected checksum.</p>
-      </article></a>
-
-      <a href="./html/npk_calculator.html"><article class="card" data-keywords="npk soil fertilizer compost manure mix nitrogen phosphorus potassium plant garden">
-        <h2>Crop NPK calculator</h2>
-        <p>Find the mix of soil and fertilizer that best matches a plant's N, P and K needs.</p>
-      </article></a>
-
-    </div>
-
-    <div class="alert" id="empty" hidden>
-      No tools match your search. Try a different keyword.
-    </div>
+    <p class="alert" id="empty" hidden>No tools match your search. Try a different keyword.</p>
   </main>
 
-  <footer>
-    <div class="container repel">
-      <p>Tip: press <kbd>/</kbd> to jump to search, <kbd>Esc</kbd> to clear.</p>
-      <p><code>index.html</code> · local dashboard</p>
-    </div>
-  </footer>
-
   <script>
-    const input = document.getElementById('q');
-    const grid = document.getElementById('grid');
-    const empty = document.getElementById('empty');
-    const cards = Array.from(grid.querySelectorAll('.card'));
+  (() => {
+    const input = document.getElementById("q");
+    const sections = [...document.querySelectorAll("main section")];
+    const cards = [...document.querySelectorAll("main .card")];
+    const normalize = (s) => (s || "").toLowerCase().trim();
 
-    function normalize(s) { return (s || '').toLowerCase().trim(); }
-
+    // Matches the title, description or keywords; groups with no matches are hidden too.
     function applyFilter() {
       const q = normalize(input.value);
-      let visible = 0;
-
       for (const card of cards) {
-        const text = normalize(card.textContent);
-        const kw = normalize(card.getAttribute('data-keywords'));
-        const match = !q || text.includes(q) || kw.includes(q);
-        card.hidden = !match;
-        if (match) visible++;
+        card.hidden = !!q && !normalize(card.textContent + " " + card.dataset.keywords).includes(q);
       }
-
-      empty.hidden = visible > 0;
+      for (const section of sections) section.hidden = !section.querySelector(".card:not([hidden])");
+      document.getElementById("empty").hidden = cards.some((card) => !card.hidden);
     }
 
-    input.addEventListener('input', applyFilter);
+    input.addEventListener("input", applyFilter);
 
-    window.addEventListener('keydown', (e) => {
-      const isTypingInInput =
-        document.activeElement &&
-        (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA');
+    // Enter opens the first match.
+    input.addEventListener("keydown", (e) => {
+      const first = cards.find((card) => !card.hidden);
+      if (e.key === "Enter" && normalize(input.value) && first) location.href = first.href;
+    });
 
-      if (e.key === '/' && !isTypingInInput) {
+    // "/" jumps to search from anywhere except another text field; Esc clears it.
+    window.addEventListener("keydown", (e) => {
+      const typing = e.target.closest("input, textarea, select, [contenteditable]");
+      if (e.key === "/" && !typing) {
         e.preventDefault();
         input.focus();
-      } else if (e.key === 'Escape') {
-        if (document.activeElement === input || input.value) {
-          input.value = '';
-          applyFilter();
-          input.blur();
-        }
+      } else if (e.key === "Escape" && (document.activeElement === input || input.value)) {
+        input.value = "";
+        applyFilter();
+        input.blur();
       }
     });
 
     applyFilter();
+  })();
   </script>
 </body>
 </html>

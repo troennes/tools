@@ -86,5 +86,5 @@ test("downloads the minified CSS", async ({ page }) => {
 
 test("links back to the tool index", async ({ page }) => {
   await page.getByRole("link", { name: "← Tools" }).click();
-  await expect(page).toHaveTitle("Tools");
+  await expect(page).toHaveTitle("My tools collection");
 });

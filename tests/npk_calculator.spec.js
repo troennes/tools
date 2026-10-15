@@ -157,5 +157,5 @@ for (const seed of [1, 2, 3, 4, 5, 6]) {
 
 test("links back to the tool index", async ({ page }) => {
   await page.getByRole("link", { name: "← Tools" }).click();
-  await expect(page).toHaveTitle("Tools");
+  await expect(page).toHaveTitle("My tools collection");
 });

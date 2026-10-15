@@ -4,7 +4,7 @@ A personal collection of standalone browser-based tools, deployed as a static si
 
 ## Architecture
 
-- `index.html` — Dashboard with search/filter and links to all tools
+- `index.html` — Dashboard: tool cards in headed groups (Text & code, Color, Images & PDF, Other), with search
 - Each tool is a single HTML file in `html/`; JS stays inline, CSS now loads from `styles/style.css`
 
 Tools never share JS — each file contains all its own JavaScript. When adding a new tool, add the card to `index.html` and create a new `html/toolname.html`.
@@ -46,8 +46,15 @@ All tools (in `html/`) link the shared stylesheet, then the project theme:
 
 ## Adding a New Tool
 
-1. Create `html/toolname.html` using Minium CSS (link `../styles/style.css`, use semantic HTML + layout/component classes)
-2. Add a card entry to the `tools` array in `index.html` with `name`, `file`, `desc`, and `keywords`
+1. Create `html/toolname.html` using Minium CSS (link `../styles/style.css` and `../styles/theme.css`, use semantic HTML + layout/component classes)
+2. Add a link card to the right group in `index.html`. Its `h3` must match the tool page's `h1` exactly (`tests/index.spec.js` checks this, and that every file in `html/` has a card):
+
+   ```html
+   <a href="./html/toolname.html" class="card" data-keywords="extra search words">
+     <h3>Tool name</h3>
+     <p>One-sentence description.</p>
+   </a>
+   ```
 3. Add a page header with a `← Tools` back link (`<header><nav class="container slim"><ul><li><a href="../index.html">← Tools</a></li></ul></nav></header>`) and an `hgroup` title
 4. Add Playwright tests in `tests/toolname.spec.js`
 
