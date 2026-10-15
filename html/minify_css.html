@@ -3,497 +3,219 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>CSS Minifier</title>
+  <title>CSS minifier</title>
+  <link rel="stylesheet" href="../styles/style.css">
   <style>
-    *{ box-sizing:border-box; }
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; }
-    header { padding: 16px 18px; border-bottom: 1px solid #8884; }
-    h1 { font-size: 16px; margin: 0 0 6px; }
-    .sub { font-size: 13px; opacity: .8; margin: 0; line-height: 1.35; }
-    main { padding: 16px 18px 22px; max-width: 1100px; margin: 0 auto; }
-    .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-    .card { border: 1px solid #8884; border-radius: 12px; padding: 12px; background: #8881; }
-    .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    label { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; }
-    button {
-      border: 1px solid #8886;
-      background: #8882;
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 13px;
-      cursor: pointer;
-    }
-    button:hover { background: #8883; }
-    button:active { transform: translateY(1px); }
-    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
-    @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
-    textarea {
-      width: 100%;
-      min-height: 360px;
-      resize: vertical;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-      font-size: 12.5px;
-      line-height: 1.45;
-      padding: 10px;
-      border-radius: 10px;
-      border: 1px solid #8886;
-      background: #0000;
-      outline: none;
-      white-space: pre;
-      tab-size: 2;
-    }
-    textarea:focus { box-shadow: 0 0 0 3px #6aa8ff33; border-color: #6aa8ff99; }
-    .meta { display:flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; opacity: .85; }
-    .pill { display:inline-flex; align-items:center; gap:6px; padding: 3px 8px; border-radius: 999px; border: 1px solid #8884; background: #8881; }
-    .warn { margin-top: 10px; font-size: 12px; opacity: .85; }
-    .toast {
-      position: fixed;
-      right: 14px; bottom: 14px;
-      padding: 10px 12px;
-      border-radius: 12px;
-      border: 1px solid #8886;
-      background: #111c;
-      color: #fff;
-      font-size: 13px;
-      backdrop-filter: blur(8px);
-      transform: translateY(10px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .16s ease, transform .16s ease;
-    }
-    .toast.show { opacity: 1; transform: translateY(0); }
+    textarea { font-family: var(--font-mono); font-size: var(--size-small); }
+    #min { word-break: break-all; }
   </style>
 </head>
 <body>
   <header>
-    <h1>CSS Minifier</h1>
-    <p class="sub">Paste CSS on the left → minified output on the right. No dependencies. Tries to be safe (strings / url() preserved).</p>
+    <nav class="container slim">
+      <ul><li><a href="../index.html">← Tools</a></li></ul>
+    </nav>
   </header>
 
-  <main>
-    <div class="card">
-      <div class="row" style="margin-bottom: 0.5rem;">
-        <button id="btnMinify" type="button">Minify</button>
-        <button id="btnCopy" type="button">Copy output</button>
-        <button id="btnDownload" type="button">Download .min.css</button>
-        <button id="btnClear" type="button">Clear</button>
-    </div>
-    <div class="row">
-        <label><input id="optAuto" type="checkbox" checked> Auto-minify</label>
-        <label><input id="optComments" type="checkbox" checked> Remove comments</label>
-        <label><input id="optZeroUnits" type="checkbox" checked> Shorten 0 units</label>
-        <label><input id="optHex" type="checkbox" checked> Shorten hex</label>
-        <label><input id="optDecimals" type="checkbox" checked> Trim leading zeros</label>
-      </div>
+  <main class="container slim flow">
+    <hgroup>
+      <h1>CSS minifier</h1>
+      <p>Type in either field: CSS is minified, minified CSS is beautified. Only comments and whitespace are removed.</p>
+    </hgroup>
+
+    <div class="flow-tight">
+      <label for="css">CSS</label>
+      <textarea id="css" rows="12" spellcheck="false"></textarea>
     </div>
 
-    <div class="split">
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom: 0.5rem;">
-          <strong>Input</strong>
-          <span class="pill" id="inBytes">0 bytes</span>
-        </div>
-        <textarea id="input" spellcheck="false" placeholder="Paste CSS here...">/* Example */
-:root {
-  --gap: 16px;
-  --brand: #aabbcc;
-}
-
-.container > .item + .item {
-  margin: 0px 0.50rem;
-  color: #ffffff;
-  background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'></svg>");
-}
-
-/* keep spaces where they matter (descendant selector) */
-.nav .link { padding: 0px 10px; }</textarea>
-        <div class="meta">
-          <span id="inLines">—</span>
-          <span id="status">Ready.</span>
+    <div class="flow-tight">
+      <div class="repel">
+        <label for="min">Minified</label>
+        <div class="cluster gap-2xs">
+          <button type="button" id="copy" class="neutral small">Copy</button>
+          <button type="button" id="download" class="neutral small">Download</button>
         </div>
       </div>
-
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom: 0.5rem;">
-          <strong>Output</strong>
-          <span class="pill" id="outBytes">0 bytes</span>
-        </div>
-        <textarea id="output" spellcheck="false" placeholder="Minified CSS will appear here..." readonly></textarea>
-        <div class="meta">
-          <span id="ratio">—</span>
-          <span id="outLines">—</span>
-        </div>
-      </div>
+      <textarea id="min" rows="6" spellcheck="false"></textarea>
+      <small id="savings" hidden></small>
     </div>
-
-    <p class="warn">
-      Note: This is a lightweight minifier (not a full CSS parser). It avoids touching string contents and <code>url(...)</code> strings, and it keeps one space where a descendant selector needs it.
-    </p>
   </main>
 
-  <div class="toast" id="toast"></div>
+<script>
+(() => {
+  const css = document.getElementById("css");
+  const min = document.getElementById("min");
+  const savings = document.getElementById("savings");
 
-  <script>
-    const $ = (id) => document.getElementById(id);
+  const URL_START = /url\(\s*[^\s"')]/iy;
+  function isUrl(src, i) {
+    URL_START.lastIndex = i;
+    return URL_START.test(src) && !/[\w-]/.test(src[i - 1] ?? "");
+  }
 
-    const els = {
-      input: $("input"),
-      output: $("output"),
-      btnMinify: $("btnMinify"),
-      btnCopy: $("btnCopy"),
-      btnDownload: $("btnDownload"),
-      btnClear: $("btnClear"),
-      optAuto: $("optAuto"),
-      optComments: $("optComments"),
-      optZeroUnits: $("optZeroUnits"),
-      optHex: $("optHex"),
-      optDecimals: $("optDecimals"),
-      inBytes: $("inBytes"),
-      outBytes: $("outBytes"),
-      inLines: $("inLines"),
-      outLines: $("outLines"),
-      ratio: $("ratio"),
-      status: $("status"),
-      toast: $("toast"),
-    };
-
-    function bytesLabel(str) {
-      const n = new TextEncoder().encode(str).length;
-      if (n < 1024) return `${n} bytes`;
-      if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-      return `${(n / (1024 * 1024)).toFixed(2)} MB`;
-    }
-
-    function linesLabel(str) {
-      if (!str) return "0 lines";
-      return `${str.split(/\r\n|\r|\n/).length} lines`;
-    }
-
-    function toast(msg) {
-      els.toast.textContent = msg;
-      els.toast.classList.add("show");
-      clearTimeout(toast._t);
-      toast._t = setTimeout(() => els.toast.classList.remove("show"), 1300);
-    }
-
-    // --- Core minifier ---
-    function minifyCSS(input, options) {
-      // Pass 1: remove comments safely (skip strings)
-      let s = input;
-      if (options.removeComments) {
-        s = stripComments(s);
+  // Splits CSS into single characters, " " for any whitespace run, and atoms that must
+  // stay intact: comments, strings, unquoted url(...) and backslash escapes.
+  function tokenize(src) {
+    const tokens = [];
+    let i = 0;
+    while (i < src.length) {
+      const ch = src[i];
+      let end = i + 1;
+      if (ch === "/" && src[i + 1] === "*") {
+        end = src.indexOf("*/", i + 2);
+        end = end < 0 ? src.length : end + 2;
+      } else if (ch === '"' || ch === "'") {
+        while (end < src.length && src[end] !== ch && src[end] !== "\n") end += src[end] === "\\" ? 2 : 1;
+        end = Math.min(end + 1, src.length);
+      } else if (isUrl(src, i)) {
+        end = src.indexOf(")", i);
+        end = end < 0 ? src.length : end + 1;
+        const closed = src[end - 1] === ")";
+        tokens.push("url(" + src.slice(i + 4, closed ? end - 1 : end).trim() + (closed ? ")" : ""));
+        i = end;
+        continue;
+      } else if (ch === "\\") {
+        end = Math.min(i + 2, src.length);
+      } else if (/\s/.test(ch)) {
+        while (end < src.length && /\s/.test(src[end])) end++;
+        tokens.push(" ");
+        i = end;
+        continue;
       }
-
-      // Pass 2: collapse whitespace safely (skip strings)
-      s = collapseWhitespaceOutsideStrings(s);
-
-      // Pass 3: remove spaces around punctuation tokens where safe
-      // Keep descendant selector space: we don't remove generic identifier spaces; only around known tokens.
-      s = s
-        .replace(/\s*([{}:;,>+~()\[\]=])\s*/g, "$1")
-        // Slash is used as separator in modern color syntaxes (e.g., hsl(… / …)) and as operator in calc.
-        // Removing spaces around it is generally safe.
-        .replace(/\s*\/\s*/g, "/")
-        // Remove unnecessary semicolons before }
-        .replace(/;}/g, "}")
-        // Remove space after !important
-        .replace(/!\s*important\b/gi, "!important");
-
-      if (options.trimLeadingZeroDecimals) {
-        s = trimLeadingZeroDecimalsOutsideStrings(s);
-      }
-      if (options.shortenZeroUnits) {
-        s = shortenZeroUnitsOutsideStrings(s);
-      }
-      if (options.shortenHexColors) {
-        s = shortenHexOutsideStrings(s);
-      }
-
-      // Final: trim
-      s = s.trim();
-
-      return s;
+      tokens.push(src.slice(i, end));
+      i = end;
     }
+    return tokens;
+  }
 
-    function stripComments(str) {
-      let out = "";
-      let i = 0;
-      let inStr = false;
-      let quote = "";
-      while (i < str.length) {
-        const ch = str[i];
-        const next = str[i + 1];
+  const isComment = (t) => t.startsWith("/*");
 
-        if (!inStr && ch === "/" && next === "*") {
-          // comment start
-          i += 2;
-          while (i < str.length) {
-            if (str[i] === "*" && str[i + 1] === "/") { i += 2; break; }
-            i++;
-          }
-          continue;
-        }
-
-        if (!inStr && (ch === '"' || ch === "'")) {
-          inStr = true;
-          quote = ch;
-          out += ch;
-          i++;
-          continue;
-        }
-
-        if (inStr) {
-          out += ch;
-          if (ch === "\\") {
-            // escape next char
-            if (i + 1 < str.length) out += str[i + 1], i += 2;
-            else i++;
-            continue;
-          }
-          if (ch === quote) {
-            inStr = false;
-            quote = "";
-          }
-          i++;
-          continue;
-        }
-
-        out += ch;
-        i++;
-      }
-      return out;
+  // For each token: is it in a selector or at-rule prelude (the next of { ; } is "{"),
+  // and how deep inside parentheses is it?
+  function context(tokens) {
+    const prelude = new Array(tokens.length);
+    let next = "}";
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      if ("{;}".includes(tokens[i]) && tokens[i].length === 1) next = tokens[i];
+      prelude[i] = next === "{";
     }
+    const depth = new Array(tokens.length);
+    let d = 0;
+    tokens.forEach((t, i) => {
+      if (t === ")") d = Math.max(0, d - 1);
+      depth[i] = d;
+      if (t === "(") d++;
+    });
+    return { prelude, depth };
+  }
 
-    function collapseWhitespaceOutsideStrings(str) {
-      let out = "";
-      let i = 0;
-      let inStr = false;
-      let quote = "";
-      let pendingSpace = false;
+  // Can the whitespace between prev and next go without changing meaning?
+  function dropSpace(prev, next, inPrelude, depth) {
+    const p = prev.length === 1 ? prev : "", n = next.length === 1 ? next : "";
+    if (p && "{};,>~!/(:".includes(p)) return true;
+    if (n && "{};,>~!/)".includes(n)) return true;
+    if (n === ":") return !inPrelude;                  // ".a :hover" differs from ".a:hover"
+    if (p === "+" || n === "+") return inPrelude && depth === 0; // calc() needs spaces around +
+    return false;
+  }
 
-      while (i < str.length) {
-        const ch = str[i];
-
-        if (!inStr && (ch === '"' || ch === "'")) {
-          if (pendingSpace) { out += " "; pendingSpace = false; }
-          inStr = true;
-          quote = ch;
-          out += ch;
-          i++;
-          continue;
-        }
-
-        if (inStr) {
-          out += ch;
-          if (ch === "\\") {
-            if (i + 1 < str.length) out += str[i + 1], i += 2;
-            else i++;
-            continue;
-          }
-          if (ch === quote) {
-            inStr = false;
-            quote = "";
-          }
-          i++;
-          continue;
-        }
-
-        // outside strings
-        if (/\s/.test(ch)) {
-          pendingSpace = true;
-          i++;
-          continue;
-        } else {
-          if (pendingSpace) {
-            // add one space; later we remove spaces around tokens.
-            out += " ";
-            pendingSpace = false;
-          }
-          out += ch;
-          i++;
-        }
-      }
-      return out;
-    }
-
-    function shortenZeroUnitsOutsideStrings(str) {
-      // Replace 0<unit> with 0 (including 0.0<unit>, -0<unit> -> 0)
-      // Keep it conservative: only if number is exactly 0 or 0.0.. and directly followed by a unit.
-      const units = "(?:px|em|rem|ex|ch|lh|rlh|vw|vh|vmin|vmax|vi|vb|cm|mm|in|pt|pc|q|%|s|ms|deg|rad|turn|hz|khz|dpi|dpcm|dppx)";
-      return mapOutsideStrings(str, (seg) =>
-        seg
-          .replace(new RegExp("(^|[\\s:(,])[-+]?0+(?:\\.0+)?"+units+"\\b", "gi"), (m, p1) => p1 + "0")
-      );
-    }
-
-    function trimLeadingZeroDecimalsOutsideStrings(str) {
-      return mapOutsideStrings(str, (seg) =>
-        seg
-          // 0.5 -> .5, -0.5 -> -.5 (but keep 0.0 as 0)
-          .replace(/(^|[^\w.-])(-?)0+\.(\d+)/g, (m, p1, sign, frac) => `${p1}${sign}.${frac}`)
-      );
-    }
-
-    function shortenHexOutsideStrings(str) {
-      return mapOutsideStrings(str, (seg) => {
-        // Lowercase hex to maximize shortening opportunities
-        seg = seg.replace(/#([0-9a-fA-F]{3,8})\b/g, (m, hex) => "#" + hex.toLowerCase());
-
-        // #aabbcc -> #abc
-        seg = seg.replace(/#([0-9a-f]{6})\b/g, (m, h) => {
-          const a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5];
-          if (a === b && c === d && e === f) return "#" + a + c + e;
-          return m;
-        });
-
-        // #aabbccdd -> #abcd
-        seg = seg.replace(/#([0-9a-f]{8})\b/g, (m, h) => {
-          const a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], k = h[7];
-          if (a === b && c === d && e === f && g === k) return "#" + a + c + e + g;
-          return m;
-        });
-
-        return seg;
-      });
-    }
-
-    function mapOutsideStrings(str, fn) {
-      // Applies fn to non-string segments. Keeps string segments untouched.
-      let out = "";
-      let i = 0;
-      let inStr = false;
-      let quote = "";
-      let buf = "";
-
-      function flushBuf() {
-        if (buf) { out += fn(buf); buf = ""; }
-      }
-
-      while (i < str.length) {
-        const ch = str[i];
-
-        if (!inStr && (ch === '"' || ch === "'")) {
-          flushBuf();
-          inStr = true;
-          quote = ch;
-          out += ch;
-          i++;
-          continue;
-        }
-
-        if (inStr) {
-          out += ch;
-          if (ch === "\\") {
-            if (i + 1 < str.length) out += str[i + 1], i += 2;
-            else i++;
-            continue;
-          }
-          if (ch === quote) {
-            inStr = false;
-            quote = "";
-          }
-          i++;
-          continue;
-        }
-
-        buf += ch;
-        i++;
-      }
-
-      flushBuf();
-      return out;
-    }
-
-    // --- UI wiring ---
-    let debounceT = null;
-
-    function updateStats() {
-      els.inBytes.textContent = bytesLabel(els.input.value);
-      els.outBytes.textContent = bytesLabel(els.output.value);
-      els.inLines.textContent = linesLabel(els.input.value);
-      els.outLines.textContent = linesLabel(els.output.value);
-
-      const inB = new TextEncoder().encode(els.input.value).length;
-      const outB = new TextEncoder().encode(els.output.value).length;
-      if (inB > 0) {
-        const pct = ((1 - (outB / inB)) * 100);
-        els.ratio.textContent = `Saved: ${pct.toFixed(1)}%`;
+  function minify(src) {
+    const tokens = tokenize(src).filter((t) => !isComment(t) || t.startsWith("/*!"));
+    const { prelude, depth } = context(tokens);
+    const out = [];
+    tokens.forEach((t, i) => {
+      if (t === " ") {
+        const next = tokens[i + 1];
+        if (out.length && next && next !== " " && !dropSpace(out.at(-1), next, prelude[i], depth[i])) out.push(" ");
       } else {
-        els.ratio.textContent = "—";
-      }
-    }
-
-    function runMinify() {
-      try {
-        const out = minifyCSS(els.input.value, {
-          removeComments: els.optComments.checked,
-          shortenZeroUnits: els.optZeroUnits.checked,
-          shortenHexColors: els.optHex.checked,
-          trimLeadingZeroDecimals: els.optDecimals.checked,
-        });
-        els.output.value = out;
-        els.status.textContent = out ? "Minified." : "Ready.";
-      } catch (e) {
-        els.status.textContent = "Error while minifying.";
-        els.output.value = "";
-        console.error(e);
-      }
-      updateStats();
-    }
-
-    function scheduleAuto() {
-      if (!els.optAuto.checked) return;
-      clearTimeout(debounceT);
-      debounceT = setTimeout(runMinify, 120);
-    }
-
-    els.input.addEventListener("input", () => { els.status.textContent = "Typing…"; scheduleAuto(); updateStats(); });
-    els.optComments.addEventListener("change", scheduleAuto);
-    els.optZeroUnits.addEventListener("change", scheduleAuto);
-    els.optHex.addEventListener("change", scheduleAuto);
-    els.optDecimals.addEventListener("change", scheduleAuto);
-
-    els.btnMinify.addEventListener("click", () => runMinify());
-
-    els.btnCopy.addEventListener("click", async () => {
-      const text = els.output.value;
-      if (!text) return toast("Nothing to copy.");
-      try {
-        await navigator.clipboard.writeText(text);
-        toast("Copied!");
-      } catch {
-        // fallback
-        els.output.focus();
-        els.output.select();
-        document.execCommand("copy");
-        toast("Copied!");
+        if (t === "}" && out.at(-1) === ";") out.pop();
+        out.push(t);
       }
     });
+    return out.join("");
+  }
 
-    els.btnDownload.addEventListener("click", () => {
-      const text = els.output.value;
-      if (!text) return toast("Nothing to download.");
-      const blob = new Blob([text], { type: "text/css;charset=utf-8" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "styles.min.css";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 500);
-      toast("Downloaded.");
+  function beautify(src) {
+    const tokens = tokenize(src);
+    const { prelude, depth } = context(tokens);
+    const lines = [];
+    let line = "", indent = 0;
+    const flush = () => {
+      if (line.trim()) lines.push("  ".repeat(indent) + line.trim());
+      line = "";
+    };
+    tokens.forEach((t, i) => {
+      if (t === "{") {
+        line = line.trimEnd() + " {";
+        flush();
+        indent++;
+      } else if (t === "}") {
+        // Give the last declaration its semicolon back.
+        if (line.trim() && !isComment(line.trim())) line = line.trimEnd() + ";";
+        flush();
+        indent = Math.max(0, indent - 1);
+        line = "}";
+        flush();
+        if (indent === 0) lines.push("");
+      } else if (t === ";") {
+        line = line.trimEnd() + ";";
+        flush();
+      } else if (isComment(t)) {
+        flush();
+        line = t;
+        flush();
+      } else if (t === " ") {
+        if (line && !line.endsWith(" ")) line += " ";
+      } else if (t === ":" && (prelude[i] ? depth[i] > 0 && line.trimStart().startsWith("@") : depth[i] === 0)) {
+        line = line.trimEnd() + ": ";
+      } else if (t === ",") {
+        line = line.trimEnd() + ", ";
+      } else if (">~+".includes(t) && prelude[i] && depth[i] === 0) {
+        line = line.trimEnd() + ` ${t} `;
+      } else if (t === "!") {
+        line = line.trimEnd() + " !";
+      } else {
+        line += t;
+      }
     });
+    flush();
+    while (lines.at(-1) === "") lines.pop();
+    return lines.join("\n");
+  }
 
-    els.btnClear.addEventListener("click", () => {
-      els.input.value = "";
-      els.output.value = "";
-      els.status.textContent = "Cleared.";
-      updateStats();
-    });
+  const size = (s) => new TextEncoder().encode(s).length;
+  const fmt = (n) => (n < 1024 ? `${n} bytes` : `${(n / 1024).toFixed(1)} KB`);
 
-    // initial
-    runMinify();
-  </script>
+  function showSavings() {
+    const before = size(css.value), after = size(min.value);
+    savings.hidden = !before;
+    if (before) savings.textContent = `${fmt(before)} → ${fmt(after)} (${Math.round((1 - after / before) * 100)}% smaller)`;
+  }
+
+  css.addEventListener("input", () => {
+    min.value = minify(css.value);
+    showSavings();
+  });
+  min.addEventListener("input", () => {
+    css.value = beautify(min.value);
+    showSavings();
+  });
+
+  const copy = document.getElementById("copy");
+  copy.addEventListener("click", async () => {
+    await navigator.clipboard.writeText(min.value);
+    copy.textContent = "Copied";
+    setTimeout(() => (copy.textContent = "Copy"), 1200);
+  });
+
+  document.getElementById("download").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([min.value], { type: "text/css" }));
+    a.download = "styles.min.css";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+})();
+</script>
 </body>
 </html>
