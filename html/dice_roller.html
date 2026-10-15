@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dice roller</title>
+  <link rel="stylesheet" href="../styles/style.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+  <style>
+    #notation { font-family: var(--font-mono); }
+
+    /* Compact fixed-width counters: two per row on phones, four on wider screens. */
+    .counters { display: grid; grid-template-columns: repeat(2, max-content); justify-content: space-between; gap: var(--space-s); }
+    @media (min-width: 36rem) { .counters { grid-template-columns: repeat(4, max-content); } }
+    .counter { display: grid; gap: var(--space-3xs); }
+    .counter [role="group"] { align-items: stretch; }
+    .counter button { min-inline-size: 2.25em; }
+    /* The group only drops the left border of non-buttons, so the + button's border would double this one. */
+    .counter input {
+      inline-size: 3.5rem; text-align: center; font-variant-numeric: tabular-nums;
+      border-inline-end: 0; appearance: textfield;
+    }
+    .counter input::-webkit-inner-spin-button, .counter input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+
+    #mode .cluster { --gap: var(--space-s); }
+
+    /* Minium components set display, which would override the hidden attribute. */
+    #result[hidden], #history[hidden], #mode[hidden] { display: none; }
+
+    .total { font-size: var(--size-h1); font-weight: var(--font-weight-bold); line-height: 1; font-variant-numeric: tabular-nums; }
+    .total.pending { color: var(--color-text-muted); }
+    .group + .group { border-block-start: 1px solid var(--color-border-weak); padding-block-start: var(--space-xs); }
+    .total-row { --repel-vertical-alignment: baseline; border-block-start: 2px solid var(--color-border-strong); padding-block-start: var(--space-xs); }
+    #result-label { color: var(--color-text-muted); }
+    .dice { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+
+    .die {
+      display: inline-flex; align-items: baseline; justify-content: center; gap: 0.2em;
+      min-inline-size: 2.4em; padding: 0.2em 0.4em;
+      border: 1px solid var(--color-border-strong); border-radius: var(--border-radius-s);
+      font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    }
+    .die del { font-size: 0.8em; color: var(--color-text-muted); }
+    .die.max { border-color: var(--color-success); color: var(--color-success-text); font-weight: var(--font-weight-bold); }
+    .die.min { border-color: var(--color-danger); color: var(--color-danger-text); }
+    .die.dropped { opacity: 0.45; border-style: dashed; font-weight: normal; }
+    .die.rolling { color: var(--color-text-muted); border-color: var(--color-border-weak); animation: tumble 0.2s linear infinite; }
+    .die.landed, .total.landed { animation: land 0.2s ease-out; }
+
+    @keyframes tumble { 0%, 100% { rotate: -14deg; } 50% { rotate: 14deg; } }
+    @keyframes land { from { scale: 1.35; } to { scale: 1; } }
+
+    #history ol { padding-inline-start: 0; list-style: none; }
+    #history li { display: flex; flex-wrap: wrap; gap: 0 var(--space-xs); align-items: baseline; }
+    #history li + li { margin-block-start: var(--space-2xs); }
+    #history li strong { margin-inline-start: auto; font-variant-numeric: tabular-nums; }
+    #history li small { flex-basis: 100%; color: var(--color-text-muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container slim">
+      <ul><li><a href="../index.html">← Tools</a></li></ul>
+    </nav>
+  </header>
+
+  <main class="container slim flow">
+    <hgroup>
+      <h1>Dice roller</h1>
+      <p>Pick dice or type them like <code>12d8+11</code>, then roll.</p>
+    </hgroup>
+
+    <div class="flow-tight">
+      <label for="notation">Dice</label>
+      <input id="notation" type="text" autocomplete="off" spellcheck="false" placeholder="1d20+5">
+      <small id="notation-error" hidden></small>
+    </div>
+
+    <div class="counters" id="counters"></div>
+
+    <label><input type="checkbox" role="switch" id="gwf"> Treat 1s and 2s as 3s (Great Weapon Fighting)</label>
+
+    <fieldset id="mode" class="bare" hidden>
+      <legend>d20 rolls</legend>
+      <div class="cluster">
+        <span><input type="radio" name="mode" id="mode-normal" value="normal" checked><label for="mode-normal">Normal</label></span>
+        <span><input type="radio" name="mode" id="mode-adv" value="advantage"><label for="mode-adv">Advantage</label></span>
+        <span><input type="radio" name="mode" id="mode-dis" value="disadvantage"><label for="mode-dis">Disadvantage</label></span>
+      </div>
+    </fieldset>
+
+    <button type="button" id="roll" class="large full-width">Roll</button>
+
+    <section id="result" class="card flow" aria-label="Result" hidden>
+      <p id="result-label"></p>
+      <div id="groups" class="flow-tight"></div>
+      <div class="repel total-row">
+        <strong>Total</strong>
+        <output id="total" class="total" aria-live="polite" aria-label="Total"></output>
+      </div>
+    </section>
+
+    <details id="history" hidden>
+      <summary id="history-summary">History</summary>
+      <ol id="history-list"></ol>
+    </details>
+  </main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const notation = $("notation"), notationError = $("notation-error"), counters = $("counters");
+  const gwf = $("gwf"), modeSet = $("mode"), rollBtn = $("roll");
+  const result = $("result"), resultLabel = $("result-label"), total = $("total"), groups = $("groups");
+  const history = $("history"), historyList = $("history-list");
+
+  const SIDES = [4, 6, 8, 10, 12, 20, 100];
+  const MAX_COUNT = 99, MAX_MOD = 999, HISTORY = 50, STORE = "dice-roller";
+  const MODE_LABEL = { advantage: "advantage", disadvantage: "disadvantage" };
+
+  const state = { counts: Object.fromEntries(SIDES.map((n) => [n, 0])), mod: 0 };
+  let rolls = [];
+
+  // Uniform 1..sides from the OS CSPRNG. Rejection sampling drops the top sliver of the
+  // 32-bit range that would otherwise make low faces slightly more likely.
+  const buf = new Uint32Array(1);
+  function rollDie(sides) {
+    const limit = Math.floor(2 ** 32 / sides) * sides;
+    do crypto.getRandomValues(buf); while (buf[0] >= limit);
+    return (buf[0] % sides) + 1;
+  }
+
+  // Throws with a user-facing message; returns { counts, mod } otherwise.
+  function parse(text) {
+    const s = text.replace(/\s+/g, "").toLowerCase();
+    const counts = Object.fromEntries(SIDES.map((n) => [n, 0]));
+    let mod = 0;
+    if (!s) return { counts, mod };
+    if (!/^[+-]?[^+-]+([+-][^+-]+)*$/.test(s)) throw new Error("Write it like 12d8+1d6+11.");
+    for (const [, sign, term] of s.matchAll(/([+-]?)([^+-]+)/g)) {
+      let m;
+      if ((m = term.match(/^(\d*)d(\d+)$/))) {
+        const sides = Number(m[2]);
+        if (!SIDES.includes(sides)) throw new Error(`There's no d${sides}. Use d4, d6, d8, d10, d12, d20 or d100.`);
+        if (sign === "-") throw new Error("Dice can only be added, not subtracted.");
+        counts[sides] += m[1] === "" ? 1 : Number(m[1]);
+        if (counts[sides] > MAX_COUNT) throw new Error(`At most ${MAX_COUNT} of each die.`);
+      } else if (/^\d+$/.test(term)) {
+        mod += (sign === "-" ? -1 : 1) * Number(term);
+      } else {
+        throw new Error(`Can't read "${term}". Write it like 12d8+1d6+11.`);
+      }
+    }
+    if (Math.abs(mod) > MAX_MOD) throw new Error(`The modifier must be between −${MAX_MOD} and ${MAX_MOD}.`);
+    return { counts, mod };
+  }
+
+  function format(counts, mod) {
+    let s = [...SIDES].reverse().filter((n) => counts[n]).map((n) => `${counts[n]}d${n}`).join("+");
+    if (mod) s += (mod < 0 ? "-" : s ? "+" : "") + Math.abs(mod);
+    return s;
+  }
+
+  const hasDice = () => SIDES.some((n) => state.counts[n] > 0);
+  const mode = () => (state.counts[20] ? document.querySelector("input[name=mode]:checked").value : "normal");
+
+  // Counters: one per die type plus the modifier, all built the same way.
+  const fields = {};
+  function addCounter(key, label, min, max) {
+    const wrap = document.createElement("div");
+    wrap.className = "counter";
+    wrap.innerHTML = `
+      <label for="count-${key}">${label}</label>
+      <div role="group">
+        <button type="button" class="neutral secondary small" aria-label="Decrease ${label}">−</button>
+        <input id="count-${key}" type="number" inputmode="numeric" step="1" min="${min}" max="${max}">
+        <button type="button" class="neutral secondary small" aria-label="Increase ${label}">+</button>
+      </div>`;
+    const [dec, inc] = wrap.querySelectorAll("button");
+    const input = wrap.querySelector("input");
+    const get = () => (key === "mod" ? state.mod : state.counts[key]);
+    const set = (v) => {
+      v = Math.min(max, Math.max(min, Number.isFinite(v) ? Math.trunc(v) : 0));
+      if (key === "mod") state.mod = v; else state.counts[key] = v;
+    };
+    dec.addEventListener("click", () => { set(get() - 1); update(); });
+    inc.addEventListener("click", () => { set(get() + 1); update(); });
+    input.addEventListener("input", () => { set(input.value === "" ? 0 : Number(input.value)); update({ keepField: input }); });
+    input.addEventListener("change", () => update());
+    fields[key] = { input, dec, inc, get, min, max };
+    counters.append(wrap);
+  }
+  SIDES.forEach((n) => addCounter(n, `d${n}`, 0, MAX_COUNT));
+  addCounter("mod", "Modifier", -MAX_MOD, MAX_MOD);
+
+  function setNotationError(msg) {
+    notationError.textContent = msg ?? "";
+    notationError.hidden = !msg;
+    if (msg) notation.setAttribute("aria-invalid", "true");
+    else notation.removeAttribute("aria-invalid");
+  }
+
+  // Refreshes every control from state. The field being typed in is left alone so the caret doesn't jump.
+  function update({ keepField, keepNotation } = {}) {
+    for (const f of Object.values(fields)) {
+      if (f.input !== keepField) f.input.value = f.get();
+      f.dec.disabled = f.get() <= f.min;
+      f.inc.disabled = f.get() >= f.max;
+    }
+    if (!keepNotation) {
+      notation.value = format(state.counts, state.mod);
+      setNotationError(null);
+    }
+    modeSet.hidden = !state.counts[20];
+    rollBtn.disabled = !hasDice() || notation.hasAttribute("aria-invalid");
+    save();
+  }
+
+  notation.addEventListener("input", () => {
+    try {
+      const parsed = parse(notation.value);
+      Object.assign(state.counts, parsed.counts);
+      state.mod = parsed.mod;
+      setNotationError(null);
+    } catch (e) {
+      setNotationError(e.message);
+    }
+    update({ keepNotation: true });
+  });
+  notation.addEventListener("change", () => { if (!notation.hasAttribute("aria-invalid")) update(); });
+
+  gwf.addEventListener("change", save);
+  modeSet.addEventListener("change", save);
+
+  // Enter in any field rolls.
+  document.querySelector("main").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.matches("input") && !rollBtn.disabled) {
+      e.preventDefault();
+      if (e.target === notation && !notation.hasAttribute("aria-invalid")) update();
+      roll();
+    }
+  });
+
+  function roll() {
+    const adjust = gwf.checked, m = mode();
+    const sets = [...SIDES].reverse().filter((n) => state.counts[n]).map((sides) => {
+      const dice = Array.from({ length: state.counts[sides] }, () => {
+        let raw = rollDie(sides), dropped;
+        if (sides === 20 && m !== "normal") {
+          const other = rollDie(20);
+          const keep = m === "advantage" ? Math.max(raw, other) : Math.min(raw, other);
+          dropped = keep === raw ? other : raw;
+          raw = keep;
+        }
+        return { raw, value: adjust && raw <= 2 ? 3 : raw, dropped };
+      });
+      return { sides, dice, sum: dice.reduce((a, d) => a + d.value, 0) };
+    });
+    const r = {
+      notation: format(state.counts, state.mod),
+      adjust, mode: m, mod: state.mod,
+      sets,
+      total: sets.reduce((a, s) => a + s.sum, 0) + state.mod,
+    };
+    rolls.unshift({
+      notation: r.notation, adjust, mode: m, total: r.total,
+      detail: sets.map((s) => `d${s.sides}: ${s.dice.map((d) => d.value).join(", ")}`).join(" · "),
+    });
+    rolls.length = Math.min(rolls.length, HISTORY);
+    save();
+    show(r);
+  }
+
+  const describe = (r) => [r.notation, MODE_LABEL[r.mode], r.adjust && "1s and 2s → 3"].filter(Boolean).join(" · ");
+
+  function dieHTML(sides, raw, value, extra = "") {
+    const cls = ["die", extra, raw === sides && "max", raw === 1 && value === raw && "min"].filter(Boolean).join(" ");
+    const inner = value !== raw ? `<del>${raw}</del>${value}` : `${value}`;
+    return `<span class="${cls}">${inner}</span>`;
+  }
+
+  let generation = 0;
+  function show(r) {
+    const gen = ++generation;
+    result.hidden = false;
+    resultLabel.textContent = describe(r);
+    groups.innerHTML = "";
+    const pending = []; // { chip, sides } for every die chip, in display order
+
+    for (const s of r.sets) {
+      const g = document.createElement("div");
+      g.className = "group flow-tight";
+      g.innerHTML = `<div class="dice"></div><div class="repel"><span>${s.dice.length}d${s.sides}</span><strong class="sum">${s.sum}</strong></div>`;
+      const row = g.querySelector(".dice");
+      for (const d of s.dice) {
+        row.insertAdjacentHTML("beforeend", dieHTML(s.sides, d.raw, d.value));
+        pending.push({ chip: row.lastElementChild, sides: s.sides });
+        if (d.dropped !== undefined) {
+          row.insertAdjacentHTML("beforeend", dieHTML(s.sides, d.dropped, d.dropped, "dropped"));
+          row.lastElementChild.title = "Dropped";
+          pending.push({ chip: row.lastElementChild, sides: s.sides });
+        }
+      }
+      groups.append(g);
+    }
+    if (r.mod) {
+      groups.insertAdjacentHTML("beforeend",
+        `<div class="group repel"><span>Modifier</span><strong>${r.mod > 0 ? "+" : "−"}${Math.abs(r.mod)}</strong></div>`);
+    }
+
+    const sums = [...groups.querySelectorAll(".sum")];
+    const finish = () => {
+      sums.forEach((el, i) => (el.textContent = r.sets[i].sum));
+      total.textContent = r.total;
+      total.classList.remove("pending", "landed");
+      void total.offsetWidth;
+      if (!reduced()) total.classList.add("landed");
+      renderHistory();
+    };
+
+    if (reduced()) return finish();
+
+    // Tumbling numbers: each chip cycles random faces (cosmetic only, not the real RNG),
+    // then lands on its rolled value. Landings are staggered but the whole roll stays under ~0.9 s.
+    total.classList.add("pending");
+    total.classList.remove("landed");
+    total.textContent = "…";
+    sums.forEach((el) => (el.textContent = "…"));
+    const step = Math.min(40, 350 / pending.length);
+    const start = performance.now();
+    for (const [i, p] of pending.entries()) {
+      p.final = p.chip.innerHTML;
+      p.end = 450 + i * step;
+      p.chip.classList.add("rolling");
+    }
+    let lastFace = 0;
+    (function frame(now) {
+      if (gen !== generation) return;
+      const t = now - start, flip = now - lastFace > 60;
+      if (flip) lastFace = now;
+      let left = 0;
+      for (const p of pending) {
+        if (p.landed) continue;
+        if (t >= p.end) {
+          p.landed = true;
+          p.chip.innerHTML = p.final;
+          p.chip.classList.replace("rolling", "landed");
+        } else {
+          left++;
+          if (flip) p.chip.textContent = 1 + Math.floor(Math.random() * p.sides);
+        }
+      }
+      if (left) requestAnimationFrame(frame); else finish();
+    })(start);
+  }
+
+  const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function renderHistory() {
+    history.hidden = rolls.length === 0;
+    $("history-summary").textContent = `History (${rolls.length})`;
+    historyList.innerHTML = "";
+    for (const h of rolls) {
+      const li = document.createElement("li");
+      li.innerHTML = "<span></span><strong></strong><small></small>";
+      li.children[0].textContent = describe(h);
+      li.children[1].textContent = h.total;
+      li.children[2].textContent = h.detail;
+      historyList.append(li);
+    }
+  }
+
+  function save() {
+    try {
+      localStorage.setItem(STORE, JSON.stringify({
+        notation: format(state.counts, state.mod), adjust: gwf.checked,
+        mode: document.querySelector("input[name=mode]:checked").value, rolls,
+      }));
+    } catch {}
+  }
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORE));
+      if (!saved) return;
+      const parsed = parse(saved.notation || "");
+      Object.assign(state.counts, parsed.counts);
+      state.mod = parsed.mod;
+      gwf.checked = !!saved.adjust;
+      const radio = document.querySelector(`input[name=mode][value="${saved.mode}"]`);
+      if (radio) radio.checked = true;
+      if (Array.isArray(saved.rolls)) rolls = saved.rolls.slice(0, HISTORY);
+    } catch {}
+  }
+
+  rollBtn.addEventListener("click", roll);
+  load();
+  update();
+  renderHistory();
+})();
+</script>
+</body>
+</html>
