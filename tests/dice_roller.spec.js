@@ -156,7 +156,7 @@ test("keeps setup and history after a reload", async ({ page }) => {
   await expect(history.first()).toBeHidden();
   await page.getByText("History (2)").click();
   await expect(history).toHaveCount(2);
-  await expect(history.first()).toContainText("2d10+4 · 1s and 2s → 3");
+  await expect(history.first()).toContainText("2d10+4 (1,2→3)");
   await expect(history.first().locator("strong")).toHaveText("17");
   await expect(history.nth(1).locator("strong")).toHaveText("17");
 

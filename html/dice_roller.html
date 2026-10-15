@@ -271,7 +271,7 @@
     show(r);
   }
 
-  const describe = (r) => [r.notation, MODE_LABEL[r.mode], r.adjust && "1s and 2s → 3"].filter(Boolean).join(" · ");
+  const describe = (r) => [r.notation, MODE_LABEL[r.mode]].filter(Boolean).join(" · ") + (r.adjust ? " (1,2→3)" : "");
 
   function dieHTML(sides, raw, value, extra = "") {
     const cls = ["die", extra, raw === sides && "max", raw === 1 && value === raw && "min"].filter(Boolean).join(" ");
