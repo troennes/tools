@@ -76,7 +76,7 @@ test("/ focuses search and Esc clears it", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(search(page)).toHaveValue("");
   await expect(search(page)).not.toBeFocused();
-  await expect(page.locator(".card:visible")).toHaveCount(11);
+  await expect(page.locator(".card:visible")).toHaveCount(12);
 });
 
 test("the / hint sits inside the search box and hides while typing", async ({ page }) => {

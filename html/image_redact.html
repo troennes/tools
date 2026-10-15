@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image redact and annotate</title>
+  <link rel="stylesheet" href="../styles/style.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+  <style>
+    .stage {
+      position: relative;
+      inline-size: fit-content;
+      margin-inline: auto;
+      line-height: 0;
+      touch-action: none;
+      user-select: none;
+      cursor: crosshair;
+    }
+    .stage img { max-inline-size: 100%; max-block-size: 70vh; }
+    #boxes {
+      position: absolute;
+      inset: 0;
+      inline-size: 100%;
+      block-size: 100%;
+      pointer-events: none;
+    }
+    #selection {
+      position: absolute;
+      outline: 2px dashed white;
+      box-shadow: 0 0 0 2px rgb(0 0 0 / 0.6);
+      pointer-events: none;
+    }
+    #selection[hidden] { display: none; }
+    #selection span {
+      position: absolute;
+      inline-size: 14px;
+      block-size: 14px;
+      background: white;
+      border: 1px solid rgb(0 0 0 / 0.6);
+      pointer-events: auto;
+    }
+    #selection [data-corner="nw"] { inset: -7px auto auto -7px; cursor: nwse-resize; }
+    #selection [data-corner="ne"] { inset: -7px -7px auto auto; cursor: nesw-resize; }
+    #selection [data-corner="sw"] { inset: auto auto -7px -7px; cursor: nesw-resize; }
+    #selection [data-corner="se"] { inset: auto -7px -7px auto; cursor: nwse-resize; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container slim">
+      <ul><li><a href="../index.html">← Tools</a></li></ul>
+    </nav>
+  </header>
+
+  <main class="container slim flow">
+    <hgroup>
+      <h1>Image redact and annotate</h1>
+      <p>Mark parts of an image with red rectangles or black them out, then download it. Nothing is uploaded.</p>
+    </hgroup>
+
+    <div class="flow-tight">
+      <label for="file">Image</label>
+      <input type="file" id="file" accept="image/*">
+      <small id="file-note">You can also paste an image or drop one anywhere on the page.</small>
+    </div>
+
+    <div id="editor" class="flow" hidden>
+      <div class="repel" style="align-items: end;">
+        <fieldset class="bare">
+          <legend>New boxes</legend>
+          <div class="cluster">
+            <span><input type="radio" name="mode" id="mode-mark" value="mark" checked> <label for="mode-mark">Mark (red outline)</label></span>
+            <span><input type="radio" name="mode" id="mode-censor" value="censor"> <label for="mode-censor">Censor (black box)</label></span>
+          </div>
+        </fieldset>
+        <button type="button" id="delete" class="danger secondary small" disabled>Delete box</button>
+      </div>
+
+      <div class="flow-tight">
+        <div class="stage" id="stage">
+          <img id="img" alt="Image being edited" draggable="false">
+          <svg id="boxes" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div id="selection" hidden>
+            <span data-corner="nw"></span><span data-corner="ne"></span>
+            <span data-corner="sw"></span><span data-corner="se"></span>
+          </div>
+        </div>
+        <small id="info"></small>
+      </div>
+
+      <div class="grid" style="--grid-min-size: 8rem;">
+        <div class="flow-tight">
+          <label for="format">Format</label>
+          <select id="format">
+            <option value="image/png">PNG</option>
+            <option value="image/jpeg">JPEG</option>
+            <option value="image/webp">WebP</option>
+          </select>
+        </div>
+        <div class="flow-tight" id="quality-field" hidden>
+          <label for="quality">Quality: <output id="quality-out" for="quality">90</output></label>
+          <input type="range" id="quality" min="40" max="100" value="90">
+        </div>
+      </div>
+
+      <div class="cluster gap-xs">
+        <button type="button" id="download">Download</button>
+        <button type="button" id="copy" class="neutral">Copy</button>
+      </div>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const img = $("img"), stage = $("stage"), svg = $("boxes"), selection = $("selection");
+  const format = $("format"), quality = $("quality"), del = $("delete");
+
+  const RED = "#ff0000", BLACK = "#000000";
+
+  // Boxes in source pixels, in drawing order: { mode: "mark" | "censor", x, y, w, h }.
+  let boxes = [];
+  let selected = null;
+  let name = "image";
+  let url = null;
+
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const W = () => img.naturalWidth, H = () => img.naturalHeight;
+  // Mark outlines scale with the image so they look alike on a screenshot and a large photo.
+  const lineWidth = () => Math.max(2, Math.round(Math.max(W(), H()) * 0.004));
+  // Source pixels per screen pixel.
+  const perScreenPx = () => W() / img.getBoundingClientRect().width;
+  const mode = () => document.querySelector('[name="mode"]:checked').value;
+
+  // A rectangle spanning two points, rounded to whole pixels.
+  function span(a, b) {
+    const x = Math.round(Math.min(a.x, b.x)), y = Math.round(Math.min(a.y, b.y));
+    return { x, y, w: Math.round(Math.max(a.x, b.x)) - x, h: Math.round(Math.max(a.y, b.y)) - y };
+  }
+
+  // Mark strokes sit inside the box, so the box edge is the outline's outer edge.
+  function markRect(b, lw) {
+    const i = Math.min(lw / 2, b.w / 2, b.h / 2);
+    return { x: b.x + i, y: b.y + i, w: b.w - 2 * i, h: b.h - 2 * i, lw: Math.min(lw, b.w, b.h) };
+  }
+
+  function render() {
+    const lw = lineWidth();
+    svg.replaceChildren(...boxes.map((b) => {
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      const r = b.mode === "mark" ? markRect(b, lw) : b;
+      for (const k of ["x", "y"]) rect.setAttribute(k, r[k]);
+      rect.setAttribute("width", r.w);
+      rect.setAttribute("height", r.h);
+      if (b.mode === "mark") {
+        rect.setAttribute("fill", "none");
+        rect.setAttribute("stroke", RED);
+        rect.setAttribute("stroke-width", r.lw);
+      } else {
+        rect.setAttribute("fill", BLACK);
+      }
+      return rect;
+    }));
+
+    selection.hidden = !selected;
+    if (selected) {
+      Object.assign(selection.style, {
+        left: (selected.x / W()) * 100 + "%",
+        top: (selected.y / H()) * 100 + "%",
+        width: (selected.w / W()) * 100 + "%",
+        height: (selected.h / H()) * 100 + "%",
+      });
+    }
+    del.disabled = !selected;
+
+    const n = boxes.length;
+    let text = `Image ${W()} × ${H()} · ${n === 1 ? "1 box" : `${n || "no"} boxes`}`;
+    if (selected) text += ` · selected ${selected.w} × ${selected.h} at ${selected.x}, ${selected.y}`;
+    $("info").textContent = text;
+  }
+
+  async function load(file) {
+    if (!file) return;
+    const next = URL.createObjectURL(file);
+    try {
+      img.src = next;
+      await img.decode();
+    } catch {
+      URL.revokeObjectURL(next);
+      $("file-note").textContent = "That file isn't an image this browser can open.";
+      $("file").setAttribute("aria-invalid", "true");
+      $("editor").hidden = true;
+      return;
+    }
+    if (url) URL.revokeObjectURL(url);
+    url = next;
+    name = file.name ? file.name.replace(/\.[^.]+$/, "") : "pasted-image";
+    $("file-note").textContent = `${file.name || "Pasted image"} (${file.size.toLocaleString()} bytes).`;
+    $("file").removeAttribute("aria-invalid");
+    $("editor").hidden = false;
+    svg.setAttribute("viewBox", `0 0 ${W()} ${H()}`);
+    boxes = [];
+    selected = null;
+    render();
+  }
+
+  $("file").addEventListener("change", () => load($("file").files[0]));
+
+  document.addEventListener("paste", (e) => {
+    const file = [...e.clipboardData.files].find((f) => f.type.startsWith("image/"));
+    if (file) {
+      e.preventDefault();
+      load(file);
+    }
+  });
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("drop", (e) => {
+    e.preventDefault();
+    load(e.dataTransfer.files[0]);
+  });
+
+  const toSource = (e) => {
+    const r = img.getBoundingClientRect();
+    return {
+      x: clamp(((e.clientX - r.left) * W()) / r.width, 0, W()),
+      y: clamp(((e.clientY - r.top) * H()) / r.height, 0, H()),
+    };
+  };
+
+  // The topmost box under a point. Marks are only grabbed by their outline, so you can
+  // still draw inside one (say, a censor box inside a marked area).
+  function boxAt(p) {
+    const tol = 6 * perScreenPx();
+    const inside = (b, d) => p.x >= b.x - d && p.x <= b.x + b.w + d && p.y >= b.y - d && p.y <= b.y + b.h + d;
+    const edge = lineWidth() + tol;
+    return boxes.findLast((b) => b.mode === "censor"
+      ? inside(b, tol)
+      : inside(b, tol) && !(b.w > 2 * edge && b.h > 2 * edge && inside(b, -edge)));
+  }
+
+  // Dragging: a corner handle resizes the selected box, a box moves, anywhere else draws a new box.
+  let drag = null;
+
+  stage.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    stage.setPointerCapture(e.pointerId);
+    const p = toSource(e);
+    const corner = e.target.dataset.corner;
+    if (corner && selected) {
+      const b = selected;
+      const anchor = { x: corner.includes("e") ? b.x : b.x + b.w, y: corner.includes("s") ? b.y : b.y + b.h };
+      const start = { x: corner.includes("e") ? b.x + b.w : b.x, y: corner.includes("s") ? b.y + b.h : b.y };
+      drag = { kind: "resize", box: b, anchor, start, p };
+    } else if ((selected = boxAt(p) ?? null)) {
+      drag = { kind: "move", box: selected, orig: { ...selected }, p };
+    } else {
+      const box = { mode: mode(), ...span(p, p) };
+      boxes.push(box);
+      drag = { kind: "draw", box, anchor: p, start: p, p };
+    }
+    render();
+  });
+
+  stage.addEventListener("pointermove", (e) => {
+    const p = toSource(e);
+    if (!drag) {
+      stage.style.cursor = boxAt(p) ? "move" : "";
+      return;
+    }
+    const b = drag.box;
+    if (drag.kind === "move") {
+      b.x = Math.round(clamp(drag.orig.x + p.x - drag.p.x, 0, W() - b.w));
+      b.y = Math.round(clamp(drag.orig.y + p.y - drag.p.y, 0, H() - b.h));
+    } else {
+      // The dragged corner follows the pointer's movement, so grabbing a handle off-center doesn't jump.
+      const corner = {
+        x: clamp(drag.start.x + p.x - drag.p.x, 0, W()),
+        y: clamp(drag.start.y + p.y - drag.p.y, 0, H()),
+      };
+      Object.assign(b, span(drag.anchor, corner));
+    }
+    render();
+  });
+
+  function endDrag() {
+    if (!drag) return;
+    const b = drag.box;
+    if (drag.kind === "draw") {
+      // A click, or a box too thin to see, isn't a box.
+      if (Math.min(b.w, b.h) < 4 * perScreenPx()) boxes.splice(boxes.indexOf(b), 1);
+      else selected = b;
+    } else if (drag.kind === "resize" && (b.w < 1 || b.h < 1)) {
+      boxes.splice(boxes.indexOf(b), 1);
+      selected = null;
+    }
+    drag = null;
+    render();
+  }
+  stage.addEventListener("pointerup", endDrag);
+  stage.addEventListener("pointercancel", endDrag);
+
+  function deleteSelected() {
+    boxes.splice(boxes.indexOf(selected), 1);
+    selected = null;
+    render();
+  }
+  del.addEventListener("click", deleteSelected);
+
+  document.addEventListener("keydown", (e) => {
+    if (!selected || drag || e.target.matches("select, textarea, input[type=file]")) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      deleteSelected();
+    } else if (e.key === "Escape") {
+      selected = null;
+      render();
+    }
+  });
+
+  format.addEventListener("input", () => ($("quality-field").hidden = format.value === "image/png"));
+  quality.addEventListener("input", () => ($("quality-out").value = quality.value));
+
+  // Draws the image with its boxes at full size and encodes it. Re-encoding drops
+  // metadata such as EXIF location.
+  function encode(type) {
+    const canvas = document.createElement("canvas");
+    canvas.width = W();
+    canvas.height = H();
+    const ctx = canvas.getContext("2d");
+    if (type === "image/jpeg") {
+      ctx.fillStyle = "#fff"; // JPEG has no transparency
+      ctx.fillRect(0, 0, W(), H());
+    }
+    ctx.drawImage(img, 0, 0);
+    const lw = lineWidth();
+    for (const b of boxes) {
+      if (b.mode === "mark") {
+        const r = markRect(b, lw);
+        ctx.strokeStyle = RED;
+        ctx.lineWidth = r.lw;
+        ctx.strokeRect(r.x, r.y, r.w, r.h);
+      } else {
+        ctx.fillStyle = BLACK;
+        ctx.fillRect(b.x, b.y, b.w, b.h);
+      }
+    }
+    return new Promise((resolve) => canvas.toBlob(resolve, type, Number(quality.value) / 100));
+  }
+
+  $("download").addEventListener("click", async () => {
+    const blob = await encode(format.value);
+    // Browsers without WebP encoding fall back to PNG, so name the file after what we got.
+    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" }[blob.type];
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${name}-marked.${ext}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  // The clipboard only takes PNG. The item gets the unfinished blob so the write starts
+  // within the click, which Safari requires.
+  const copy = $("copy");
+  copy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": encode("image/png") })]);
+      copy.textContent = "Copied";
+    } catch {
+      copy.textContent = "Copy failed";
+    }
+    setTimeout(() => (copy.textContent = "Copy"), 1200);
+  });
+})();
+</script>
+</body>
+</html>
