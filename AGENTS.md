@@ -41,3 +41,17 @@ All tools (in `html/`) link the shared stylesheet:
 
 1. Create `html/toolname.html` using Minium CSS (link `../styles/style.css`, use semantic HTML + layout/component classes)
 2. Add a card entry to the `tools` array in `index.html` with `name`, `file`, `desc`, and `keywords`
+3. Add a page header with a `← Tools` back link (`<header><nav class="container slim"><ul><li><a href="../index.html">← Tools</a></li></ul></nav></header>`) and an `hgroup` title
+4. Add Playwright tests in `tests/toolname.spec.js`
+
+## Testing
+
+Tools are tested end-to-end with Playwright (dev-only dependency; the deployed site still has none). `tests/server.js` is a tiny static server that Playwright starts automatically.
+
+```sh
+npm install && npx playwright install chromium   # once
+npm test                                          # run all tests
+npx playwright test tests/base64.spec.js          # one tool
+```
+
+Tests drive the real UI through accessible locators (`getByLabel`, `getByRole`), so keep form controls properly labelled.
