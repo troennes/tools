@@ -1,6 +1,6 @@
 # Project Overview
 
-A personal collection of standalone browser-based tools, deployed as a static site on GitHub Pages. No build system, no dependencies, no backend.
+A personal collection of standalone browser-based tools, deployed as a static site on GitHub Pages. No build step, no backend, and no runtime dependencies beyond the vendored libraries in `vendor/`. npm is only used for dev dependencies (Playwright for tests, plus pdf-lib so tests can build PDFs).
 
 ## Architecture
 
@@ -44,6 +44,19 @@ All tools (in `html/`) link the shared stylesheet, then the project theme:
 
 **Project CSS:** if a pattern needs custom styles that aren't covered by tokens or escape valves, add them inline in the tool's `<style>` block scoped tightly to that tool.
 
+**`hidden` gotcha:** Minium components that set `display` (for example `.badge` and link cards, `a.card`) override the `hidden` attribute, so toggling `hidden` on them does nothing. Add a scoped rule such as `.card[hidden] { display: none; }`. Plain elements (`div`, `section`, `small`, form fields) hide fine.
+
+## Tool Page Conventions
+
+Tools are deliberately small: one job, few controls, no clutter.
+
+- **Skeleton:** `header > nav.container.slim` with the `← Tools` back link, then `main.container.slim.flow` starting with an `hgroup` (`h1` + one-line `p`). Use the regular `.container` only when the tool needs the width (the NPK calculator puts inputs and result side by side in a `.switcher`).
+- **Live, linked fields:** results update as you type. Prefer two linked fields that convert both ways (Text ↔ Base64, CSS ↔ Minified) over Encode/Decode/Apply buttons.
+- **Validation:** set `aria-invalid="true"` on the field and explain in a `small` right after it; remove the attribute when valid. Disable buttons that can't do anything useful.
+- **Copy buttons:** `neutral small`, labelled "Copy", switching to "Copied" for ~1.2 s. When a page has several, give each an `aria-label` ("Copy SHA-256") so they stay distinguishable.
+- **Leave out:** toasts, status bars, Clear/Reset/Swap buttons, option toggles nobody needs, help paragraphs and notes. A short hint in a `small` is enough.
+- **Text sizes:** monospace `textarea`s use `font-family: var(--font-mono)`; long output can use `font-size: var(--size-small)`.
+
 ## Adding a New Tool
 
 1. Create `html/toolname.html` using Minium CSS (link `../styles/style.css` and `../styles/theme.css`, use semantic HTML + layout/component classes)
@@ -58,9 +71,19 @@ All tools (in `html/`) link the shared stylesheet, then the project theme:
 3. Add a page header with a `← Tools` back link (`<header><nav class="container slim"><ul><li><a href="../index.html">← Tools</a></li></ul></nav></header>`) and an `hgroup` title
 4. Add Playwright tests in `tests/toolname.spec.js`
 
+## Improving an Existing Tool
+
+Older tools were generated quickly and tend to be cluttered and subtly broken. When reworking one:
+
+1. **Read it and run it.** Exercise edge cases in a real browser and list actual bugs before proposing changes (past examples: the CSS minifier broke `calc()` and media queries, the SHA3-256 implementation was wrong, presets didn't match their values).
+2. **Ask before building.** Agree on the interaction model, which features and options stay (the default is fewer), and any behavior changes. Don't add features that weren't asked for.
+3. **Keep data verbatim.** Fact banks, presets and verified algorithm code carry over unchanged; point out suspicious entries instead of silently fixing them.
+4. **Check the result visually** in light and dark mode, at about 375 px and desktop width, with no horizontal scrolling.
+5. **Finish the job:** write or update `tests/toolname.spec.js`, update the tool's card in `index.html` (title must match the page `h1`), and run `npm test`.
+
 ## Testing
 
-Tools are tested end-to-end with Playwright (dev-only dependency; the deployed site still has none). `tests/server.js` is a tiny static server that Playwright starts automatically.
+Tools are tested end-to-end with Playwright (a dev dependency; nothing from `node_modules` is deployed). `tests/server.js` is a tiny static server that Playwright starts automatically.
 
 ```sh
 npm install && npx playwright install chromium   # once
