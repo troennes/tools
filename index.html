@@ -9,6 +9,23 @@
   <style>
     header h1 { font-size: var(--size-h4); }
     .card h3 { font-size: var(--size-h4); }
+    /* Icons are Lucide (https://lucide.dev, ISC license), inlined; the shared stroke attributes live here. */
+    /* The icon hangs in the card's start padding so the title and description share one left edge.
+       rem, not em, because the title and description have different font sizes. */
+    main .card {
+      --icon-indent: 1.75rem;
+      padding-inline-start: calc(var(--card-padding) + var(--icon-indent));
+    }
+    .card h3 .icon {
+      margin-inline: calc(-1 * var(--icon-indent)) calc(var(--icon-indent) - 1em);
+      fill: none;
+      stroke: var(--color-text-muted);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke 0.15s;
+    }
+    .card:is(:hover, :focus-visible) h3 .icon { stroke: var(--color-primary); }
     /* Keep three equal columns even in groups with fewer cards, so card widths match across groups. */
     main .grid.thirds { --grid-placement: auto-fill; }
     /* Minium gives link cards display: block, which would override the hidden attribute. */
@@ -42,23 +59,23 @@
       <h2 class="eyebrow">Text &amp; code</h2>
       <div class="grid thirds">
         <a href="./html/base64.html" class="card" data-keywords="base64 encode decode encoder decoder">
-          <h3>Base64 encoder/decoder</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="14" y="14" width="4" height="6" rx="2"/><rect x="6" y="4" width="4" height="6" rx="2"/><path d="M6 20h4"/><path d="M14 10h4"/><path d="M6 14h2v6"/><path d="M14 4h2v6"/></svg>Base64 encoder/decoder</h3>
           <p>Convert between text and base64, or encode a file.</p>
         </a>
         <a href="./html/html_entities.html" class="card" data-keywords="html entities entity encoder decoder converter escape unescape">
-          <h3>HTML entity converter</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M17.5 12c0 4.4-3.6 8-8 8A4.5 4.5 0 0 1 5 15.5c0-6 8-4 8-8.5a3 3 0 1 0-6 0c0 3 2.5 8.5 12 13"/><path d="M16 12h3"/></svg>HTML entity converter</h3>
           <p>Escape text for use in HTML, or decode entities back to text.</p>
         </a>
         <a href="./html/minify_css.html" class="card" data-keywords="css minify minifier compress optimize beautify prettify format">
-          <h3>CSS minifier</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m15 15 6 6m-6-6v4.8m0-4.8h4.8"/><path d="M9 19.8V15m0 0H4.2M9 15l-6 6"/><path d="M15 4.2V9m0 0h4.8M15 9l6-6"/><path d="M9 4.2V9m0 0H4.2M9 9 3 3"/></svg>CSS minifier</h3>
           <p>Minify CSS safely, or beautify minified CSS back into readable code.</p>
         </a>
         <a href="./html/hash_tool.html" class="card" data-keywords="hash checksum file sha1 md5 md5sum sha1sum sha256sum sha256 sha384 sha512 sha224 sha3 cksum crc verify compare">
-          <h3>Hash text or file</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/><path d="M14 13.12c0 2.38 0 6.38-1 8.88"/><path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M21.8 16c.2-2 .131-5.354 0-6"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M8.65 22c.21-.66.45-1.32.57-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/></svg>Hash text or file</h3>
           <p>Hash and compare input against various checksums.</p>
         </a>
         <a href="./html/animal_ipsum.html" class="card" data-keywords="lorem ipsum filler placeholder text animal facts">
-          <h3>Animal ipsum generator</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/></svg>Animal ipsum generator</h3>
           <p>Filler text made of short, Wikipedia-style animal facts.</p>
         </a>
       </div>
@@ -68,11 +85,11 @@
       <h2 class="eyebrow">Color</h2>
       <div class="grid thirds">
         <a href="./html/color_converter.html" class="card" data-keywords="color converter hex rgb rgba hsl hsla oklch oklab lab lch display-p3 p3 convert">
-          <h3>Color converter</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m2 22 1-1h3l9-9"/><path d="M3 21v-3l9-9"/><path d="m15 6 3.4-3.4a2.1 2.1 0 1 1 3 3L18 9l.4.4a2.1 2.1 0 1 1-3 3l-3.8-3.8a2.1 2.1 0 1 1 3-3l.4.4Z"/></svg>Color converter</h3>
           <p>Convert any CSS color to Hex, RGB, HSL, OKLCH and more.</p>
         </a>
         <a href="./html/color-mix.html" class="card" data-keywords="color mix css color-mix playground">
-          <h3><code>color-mix()</code> playground</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="9" r="7"/><circle cx="15" cy="15" r="7"/></svg><code>color-mix()</code> playground</h3>
           <p>Mix two colors with CSS <code>color-mix()</code> in any color space.</p>
         </a>
       </div>
@@ -82,19 +99,19 @@
       <h2 class="eyebrow">Images &amp; PDF</h2>
       <div class="grid thirds">
         <a href="./html/image_crop_resize.html" class="card" data-keywords="image photo picture crop resize scale convert png jpeg jpg webp paste">
-          <h3>Image crop and resize</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>Image crop and resize</h3>
           <p>Crop and resize an image, and save it as PNG, JPEG or WebP.</p>
         </a>
         <a href="./html/image_redact.html" class="card" data-keywords="image photo screenshot redact censor blur hide mark annotate highlight rectangle box paste">
-          <h3>Image redact and annotate</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>Image redact and annotate</h3>
           <p>Mark parts of an image with red rectangles or black them out.</p>
         </a>
         <a href="./html/pdf_split.html" class="card" data-keywords="pdf split extract pages reorder reverse remove delete">
-          <h3>PDF splitter</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/></svg>PDF splitter</h3>
           <p>Keep, reorder or repeat pages of a PDF, e.g. <code>1,3-5,10</code>.</p>
         </a>
         <a href="./html/pdf_merge.html" class="card" data-keywords="pdf merge join combine concatenate append">
-          <h3>PDF merger</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7h-3a2 2 0 0 1-2-2V2"/><path d="M9 18a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h7l4 4v10a2 2 0 0 1-2 2Z"/><path d="M3 7.6v12.8A1.6 1.6 0 0 0 4.6 22h9.8"/></svg>PDF merger</h3>
           <p>Join two or more PDFs into one document.</p>
         </a>
       </div>
@@ -104,11 +121,11 @@
       <h2 class="eyebrow">Other</h2>
       <div class="grid thirds">
         <a href="./html/dice_roller.html" class="card" data-keywords="dice roll roller dnd d&amp;d rpg d4 d6 d8 d10 d12 d20 d100 random great weapon fighting advantage disadvantage">
-          <h3>Dice roller</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg>Dice roller</h3>
           <p>Roll any mix of D&amp;D dice with a modifier, advantage and Great Weapon Fighting.</p>
         </a>
         <a href="./html/npk_calculator.html" class="card" data-keywords="npk soil fertilizer compost manure mix nitrogen phosphorus potassium plant garden">
-          <h3>NPK calculator</h3>
+          <h3><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>NPK calculator</h3>
           <p>Find the mix of soil and fertilizer that best matches a plant's NPK needs.</p>
         </a>
       </div>

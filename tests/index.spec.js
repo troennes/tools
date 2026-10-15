@@ -23,6 +23,29 @@ test("each card's title matches its tool page heading", async ({ page }) => {
   }
 });
 
+test("every card title starts with a decorative icon", async ({ page }) => {
+  const cards = page.locator("a.card");
+  await expect(cards.locator("h3 > svg.icon[aria-hidden='true']:first-child")).toHaveCount(await cards.count());
+});
+
+test("card titles and descriptions share a left edge, with the icon hanging before it", async ({ page }) => {
+  const edges = await page.locator("a.card").evaluateAll((cards) => cards.map((card) => {
+    const h3 = card.querySelector("h3");
+    const range = document.createRange();
+    range.setStartAfter(h3.querySelector(".icon"));
+    range.setEndAfter(h3.lastChild);
+    return {
+      icon: h3.querySelector(".icon").getBoundingClientRect().left,
+      title: range.getClientRects()[0].left,
+      text: card.querySelector("p").getBoundingClientRect().left,
+    };
+  }));
+  for (const { icon, title, text } of edges) {
+    expect(Math.abs(title - text)).toBeLessThan(1);
+    expect(icon).toBeLessThan(text);
+  }
+});
+
 test("cards in the same row have the same height and every card the same width", async ({ page }) => {
   const boxes = await page.locator("a.card").evaluateAll((cards) => cards.map((c) => c.getBoundingClientRect()));
   const rows = Map.groupBy(boxes, (b) => Math.round(b.top));

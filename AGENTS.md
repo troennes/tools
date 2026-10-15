@@ -5,6 +5,7 @@ A personal collection of standalone browser-based tools, deployed as a static si
 ## Architecture
 
 - `index.html` — Dashboard: tool cards in headed groups (Text & code, Color, Images & PDF, Other), with search
+- Each dashboard card's `h3` starts with an inline Lucide icon (https://lucide.dev, ISC): copy the icon's inner `path`/`circle`/`rect` elements into `<svg class="icon" aria-hidden="true" viewBox="0 0 24 24">`; stroke and colors come from the page's CSS
 - Each tool is a single HTML file in `html/`; JS stays inline, CSS now loads from `styles/style.css`
 
 Tools never share JS — each file contains all its own JavaScript. When adding a new tool, add the card to `index.html` and create a new `html/toolname.html`.
