@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PDF merger</title>
+  <link rel="stylesheet" href="../styles/style.css">
+  <style>
+    #files :is(th, td) { padding-inline: var(--space-2xs); }
+    #files .name { overflow-wrap: anywhere; }
+    #files td:last-child { inline-size: 1%; }
+    #files .cluster { flex-wrap: nowrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container slim">
+      <ul><li><a href="../index.html">← Tools</a></li></ul>
+    </nav>
+  </header>
+
+  <main class="container slim flow">
+    <hgroup>
+      <h1>PDF merger</h1>
+      <p>Join two or more PDFs into one document. Nothing is uploaded.</p>
+    </hgroup>
+
+    <div class="flow-tight">
+      <label for="file">PDFs</label>
+      <input type="file" id="file" accept="application/pdf,.pdf" multiple>
+      <small id="file-note">Each file you choose is added to the list. You can also drop PDFs anywhere on the page.</small>
+    </div>
+
+    <table class="full-width" id="files" hidden>
+      <caption class="fg-muted">Files are joined top to bottom.</caption>
+      <tbody></tbody>
+    </table>
+
+    <p id="summary" hidden></p>
+    <div>
+      <button type="button" id="download" disabled>Download</button>
+    </div>
+  </main>
+
+<script src="../vendor/pdf-lib/pdf-lib.min.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const file = $("file"), rows = document.querySelector("#files tbody");
+
+  let files = []; // { id, name, doc, pages }
+  let nextId = 0;
+
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const escape = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+  // Redraws the list. `focus` = [id, action] puts keyboard focus back on the button that was used.
+  function render(focus) {
+    rows.innerHTML = files.map((f, i) => `
+      <tr>
+        <th scope="row">${i + 1}</th>
+        <td><span class="name">${escape(f.name)}</span><br><small class="pages fg-muted">${plural(f.pages, "page")}</small></td>
+        <td>
+          <div class="cluster gap-3xs">
+            <button type="button" class="neutral small" data-id="${f.id}" data-action="up"
+              aria-label="Move ${escape(f.name)} up" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" class="neutral small" data-id="${f.id}" data-action="down"
+              aria-label="Move ${escape(f.name)} down" ${i === files.length - 1 ? "disabled" : ""}>↓</button>
+            <button type="button" class="neutral small" data-id="${f.id}" data-action="remove"
+              aria-label="Remove ${escape(f.name)}">Remove</button>
+          </div>
+        </td>
+      </tr>`).join("");
+    $("files").hidden = !files.length;
+
+    const total = files.reduce((sum, f) => sum + f.pages, 0);
+    $("summary").hidden = !files.length;
+    $("summary").textContent = files.length < 2
+      ? "Add at least one more PDF."
+      : `Merged PDF: ${plural(total, "page")} from ${files.length} files.`;
+    $("download").disabled = files.length < 2;
+
+    if (focus) {
+      const btn = rows.querySelector(`[data-id="${focus[0]}"][data-action="${focus[1]}"]`);
+      (btn && !btn.disabled ? btn : file).focus();
+    }
+  }
+
+  // Loads files one at a time so they're added in the order chosen.
+  async function add(list) {
+    const problems = [];
+    for (const f of list) {
+      try {
+        const doc = await PDFLib.PDFDocument.load(await f.arrayBuffer());
+        files.push({ id: nextId++, name: f.name, doc, pages: doc.getPageCount() });
+      } catch (e) {
+        problems.push(/encrypted/i.test(e.message)
+          ? `${f.name} is password-protected, so its pages can't be copied.`
+          : `${f.name} isn't a PDF this tool can read.`);
+      }
+    }
+    $("file-note").textContent = problems.length
+      ? problems.join(" ")
+      : "Each file you choose is added to the list. You can also drop PDFs anywhere on the page.";
+    if (problems.length) file.setAttribute("aria-invalid", "true");
+    else file.removeAttribute("aria-invalid");
+    file.value = ""; // so the same file can be added again
+    render();
+  }
+
+  file.addEventListener("change", () => add([...file.files]));
+  document.addEventListener("dragover", (e) => e.preventDefault());
+  document.addEventListener("drop", (e) => {
+    e.preventDefault();
+    add([...e.dataTransfer.files]);
+  });
+
+  rows.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    const i = files.findIndex((f) => f.id === Number(btn.dataset.id));
+    const action = btn.dataset.action;
+    if (action === "remove") {
+      files.splice(i, 1);
+      const next = files[Math.min(i, files.length - 1)];
+      return render(next && [next.id, "remove"]);
+    }
+    const j = action === "up" ? i - 1 : i + 1;
+    [files[i], files[j]] = [files[j], files[i]];
+    render([files[j].id, action]);
+  });
+
+  $("download").addEventListener("click", async () => {
+    const out = await PDFLib.PDFDocument.create();
+    for (const f of files) {
+      const pages = await out.copyPages(f.doc, f.doc.getPageIndices());
+      pages.forEach((page) => out.addPage(page));
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([await out.save()], { type: "application/pdf" }));
+    a.download = `${files[0].name.replace(/\.pdf$/i, "")}-merged.pdf`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+})();
+</script>
+</body>
+</html>
