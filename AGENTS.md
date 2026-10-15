@@ -9,7 +9,7 @@ A personal collection of standalone browser-based tools, deployed as a static si
 
 Tools never share JS — each file contains all its own JavaScript. When adding a new tool, add the card to `index.html` and create a new `toolname.html`.
 
-## Styling: Custom CSS library (`styles/style.css`)
+## Styling: Minium CSS v0.3.0 (`styles/style.css`)
 
 All tools link the shared stylesheet:
 
@@ -17,13 +17,13 @@ All tools link the shared stylesheet:
 <link rel="stylesheet" href="styles/style.css">
 ```
 
-The full usage reference is in `styles/llms.txt`. Key points:
+`styles/style.css` is an unmodified copy of `dist/minium.css` from `@troennes/minium` (fonts in `styles/fonts/`). To upgrade, replace it, `styles/fonts/`, and `styles/llms.txt` from the new npm package. The full usage reference is in `styles/llms.txt`. Key points:
 
 **Approach:** semantic HTML first, then layout classes, then component classes, then local custom-property escape valves. Avoid writing new CSS unless a pattern is truly project-specific.
 
-**Layout primitives:** `.flow`, `.cluster`, `.container`, `.grid`, `.repel`, `.switcher`, `.sidebar`
+**Layout primitives:** `.flow`, `.cluster`, `.container`, `.grid`, `.repel`, `.switcher`, `.sidebar`, `.frame`
 
-**Components:** `.card`, `.alert`, `.badge`, `.pill`, `.avatar`, `.dropdown`, `.tooltip`, `.skeleton` — and native `dialog`, `details`/`summary`, `progress`, `meter`
+**Components:** `.card`, `.alert`, `.badge`, `.pill`, `.avatar`, `.icon`, `.dropdown`, `.skeleton`, tooltips via `data-tooltip` + `data-placement` — and native `dialog`, `details`/`summary`, `progress`, `meter`
 
 **Buttons:** default is primary (orange). Tone modifiers: `.accent`, `.danger`, `.success`, `.warning`, `.info`, `.contrast`, `.neutral`. Emphasis: `.secondary`, `.tertiary`. Use `role="button"` on links that should look like buttons.
 
@@ -39,5 +39,5 @@ The full usage reference is in `styles/llms.txt`. Key points:
 
 ## Adding a New Tool
 
-1. Create `toolname.html` using Copi CSS (link `styles/style.css`, use semantic HTML + layout/component classes)
+1. Create `toolname.html` using Minium CSS (link `styles/style.css`, use semantic HTML + layout/component classes)
 2. Add a card entry to the `tools` array in `index.html` with `name`, `file`, `desc`, and `keywords`
