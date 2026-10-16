@@ -100,21 +100,21 @@
           <fieldset class="bare">
             <legend>New boxes</legend>
             <div class="cluster">
-              <span><input type="radio" name="mode" id="mode-mark" value="mark" checked> <label for="mode-mark">Mark (outline)</label></span>
-              <span><input type="radio" name="mode" id="mode-censor" value="censor"> <label for="mode-censor">Censor (filled box)</label></span>
+              <span><input type="radio" name="mode" id="mode-mark" value="mark" autocomplete="off" checked> <label for="mode-mark">Mark (outline)</label></span>
+              <span><input type="radio" name="mode" id="mode-censor" value="censor" autocomplete="off"> <label for="mode-censor">Censor (filled box)</label></span>
             </div>
           </fieldset>
           <fieldset class="bare">
             <legend>Color</legend>
             <div class="cluster swatches" id="swatches">
-              <input type="radio" name="color" value="#ff0000" aria-label="Red" title="Red" style="--swatch: #ff0000">
-              <input type="radio" name="color" value="#00c000" aria-label="Green" title="Green" style="--swatch: #00c000">
-              <input type="radio" name="color" value="#ff8000" aria-label="Orange" title="Orange" style="--swatch: #ff8000">
-              <input type="radio" name="color" value="#ffd600" aria-label="Yellow" title="Yellow" style="--swatch: #ffd600">
-              <input type="radio" name="color" value="#0066ff" aria-label="Blue" title="Blue" style="--swatch: #0066ff">
-              <input type="radio" name="color" value="#000000" aria-label="Black" title="Black" style="--swatch: #000000">
-              <input type="radio" name="color" value="#808080" aria-label="Gray" title="Gray" style="--swatch: #808080">
-              <input type="radio" name="color" value="#ffffff" aria-label="White" title="White" style="--swatch: #ffffff">
+              <input type="radio" name="color" autocomplete="off" value="#ff0000" aria-label="Red" title="Red" style="--swatch: #ff0000">
+              <input type="radio" name="color" autocomplete="off" value="#00c000" aria-label="Green" title="Green" style="--swatch: #00c000">
+              <input type="radio" name="color" autocomplete="off" value="#ff8000" aria-label="Orange" title="Orange" style="--swatch: #ff8000">
+              <input type="radio" name="color" autocomplete="off" value="#ffd600" aria-label="Yellow" title="Yellow" style="--swatch: #ffd600">
+              <input type="radio" name="color" autocomplete="off" value="#0066ff" aria-label="Blue" title="Blue" style="--swatch: #0066ff">
+              <input type="radio" name="color" autocomplete="off" value="#000000" aria-label="Black" title="Black" style="--swatch: #000000">
+              <input type="radio" name="color" autocomplete="off" value="#808080" aria-label="Gray" title="Gray" style="--swatch: #808080">
+              <input type="radio" name="color" autocomplete="off" value="#ffffff" aria-label="White" title="White" style="--swatch: #ffffff">
               <input type="color" id="custom-color" value="#8000ff" aria-label="Custom color" title="Custom color">
             </div>
           </fieldset>
@@ -180,9 +180,11 @@
   let selected = null;
   let name = "image";
   let url = null;
+  // The decoded image, drawn when encoding. Its size is the source size.
+  let source = null;
 
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-  const W = () => img.naturalWidth, H = () => img.naturalHeight;
+  const W = () => source.naturalWidth, H = () => source.naturalHeight;
   // Mark outlines scale with the image so they look alike on a screenshot and a large photo.
   const lineWidth = () => Math.max(2, Math.round(Math.max(W(), H()) * 0.004));
   // Source pixels per screen pixel.
@@ -270,9 +272,12 @@
   async function load(file) {
     if (!file) return;
     const next = URL.createObjectURL(file);
+    // Decode in a fresh Image: Firefox can resolve decode() on the shown img before its
+    // naturalWidth switches to the new picture, which left the boxes on the old size.
+    const probe = new Image();
     try {
-      img.src = next;
-      await img.decode();
+      probe.src = next;
+      await probe.decode();
     } catch {
       URL.revokeObjectURL(next);
       $("file-note").textContent = "That file isn't an image this browser can open.";
@@ -282,6 +287,8 @@
     }
     if (url) URL.revokeObjectURL(url);
     url = next;
+    source = probe;
+    img.src = next;
     name = file.name ? file.name.replace(/\.[^.]+$/, "") : "pasted-image";
     $("file-note").textContent = `${file.name || "Pasted image"} (${file.size.toLocaleString()} bytes).`;
     $("file").removeAttribute("aria-invalid");
@@ -423,7 +430,7 @@
       ctx.fillStyle = "#fff"; // JPEG has no transparency
       ctx.fillRect(0, 0, W(), H());
     }
-    ctx.drawImage(img, 0, 0);
+    ctx.drawImage(source, 0, 0);
     const lw = lineWidth();
     for (const b of boxes) {
       if (b.mode === "mark") {

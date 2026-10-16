@@ -2,16 +2,16 @@ import { test, expect } from "@playwright/test";
 
 // A plain white 400×200 PNG. Shown at natural size at this viewport, so one screen pixel
 // is one image pixel when dragging. Mark outlines on an image this size are 2 px wide.
-async function testImage(page) {
-  const b64 = await page.evaluate(() => {
+async function testImage(page, [width, height] = [400, 200]) {
+  const b64 = await page.evaluate(([width, height]) => {
     const c = document.createElement("canvas");
-    c.width = 400;
-    c.height = 200;
+    c.width = width;
+    c.height = height;
     const ctx = c.getContext("2d");
     ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, 400, 200);
+    ctx.fillRect(0, 0, width, height);
     return c.toDataURL("image/png").split(",")[1];
-  });
+  }, [width, height]);
   return { name: "white.png", mimeType: "image/png", buffer: Buffer.from(b64, "base64") };
 }
 
@@ -228,6 +228,20 @@ test("loading a new image removes the boxes", async ({ page }) => {
   await load(page);
   await drag(page, [20, 30], [120, 80]);
   await load(page);
+});
+
+test("boxes line up with a second image of a different size", async ({ page }) => {
+  await load(page);
+  await drag(page, [20, 30], [120, 80]);
+  await page.getByLabel("Image", { exact: true }).setInputFiles(await testImage(page, [200, 300]));
+  await expect(info(page)).toHaveText("Image 200 × 300 · no boxes");
+  await page.getByLabel("Censor (filled box)").check();
+  await drag(page, [20, 30], [120, 80]);
+  const rect = await page.locator("#boxes rect").boundingBox();
+  const selection = await page.locator("#selection").boundingBox();
+  expect(rect).toEqual(selection);
+  const file = await download(page, [[19, 50], [20, 50], [119, 79], [120, 50]]);
+  expect(file).toMatchObject({ width: 200, height: 300, colors: [WHITE, BLACK, BLACK, WHITE] });
 });
 
 test("JPEG and WebP show a quality setting", async ({ page }) => {
