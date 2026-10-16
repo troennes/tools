@@ -48,6 +48,31 @@
     #selection [data-corner="ne"] { inset: -7px -7px auto auto; cursor: nesw-resize; }
     #selection [data-corner="sw"] { inset: auto auto -7px -7px; cursor: nesw-resize; }
     #selection [data-corner="se"] { inset: auto -7px -7px auto; cursor: nwse-resize; }
+    .swatches { --gap: var(--space-2xs); }
+    .swatches input {
+      appearance: none;
+      inline-size: 1.75rem;
+      block-size: 1.75rem;
+      margin: 0;
+      padding: 0;
+      border: 1px solid var(--color-border-strong);
+      border-radius: 50%;
+      background: var(--swatch) border-box;
+      cursor: pointer;
+    }
+    .swatches input:checked,
+    .swatches:not(:has(:checked)) input[type="color"] {
+      outline: 2px solid var(--color-text);
+      outline-offset: 2px;
+    }
+    /* The custom swatch shows a rainbow until it holds the chosen color. */
+    .swatches input[type="color"] { --swatch: conic-gradient(red, yellow, lime, aqua, blue, magenta, red); }
+    .swatches input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    .swatches input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+    .swatches input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
+    .swatches:not(:has(:checked)) input[type="color"] { background: none; }
+    .swatches:has(:checked) input[type="color"]::-webkit-color-swatch { opacity: 0; }
+    .swatches:has(:checked) input[type="color"]::-moz-color-swatch { opacity: 0; }
   </style>
 </head>
 <body>
@@ -60,7 +85,7 @@
   <main class="container slim flow">
     <hgroup>
       <h1>Image redact and annotate</h1>
-      <p>Mark parts of an image with red rectangles or black them out, then download it. Nothing is uploaded.</p>
+      <p>Mark parts of an image with outlines or cover them with filled boxes, then download it. Nothing is uploaded.</p>
     </hgroup>
 
     <div class="flow-tight">
@@ -71,13 +96,29 @@
 
     <div id="editor" class="flow" hidden>
       <div class="repel" style="align-items: end;">
-        <fieldset class="bare">
-          <legend>New boxes</legend>
-          <div class="cluster">
-            <span><input type="radio" name="mode" id="mode-mark" value="mark" checked> <label for="mode-mark">Mark (red outline)</label></span>
-            <span><input type="radio" name="mode" id="mode-censor" value="censor"> <label for="mode-censor">Censor (black box)</label></span>
-          </div>
-        </fieldset>
+        <div class="flow-tight">
+          <fieldset class="bare">
+            <legend>New boxes</legend>
+            <div class="cluster">
+              <span><input type="radio" name="mode" id="mode-mark" value="mark" checked> <label for="mode-mark">Mark (outline)</label></span>
+              <span><input type="radio" name="mode" id="mode-censor" value="censor"> <label for="mode-censor">Censor (filled box)</label></span>
+            </div>
+          </fieldset>
+          <fieldset class="bare">
+            <legend>Color</legend>
+            <div class="cluster swatches" id="swatches">
+              <input type="radio" name="color" value="#ff0000" aria-label="Red" title="Red" style="--swatch: #ff0000">
+              <input type="radio" name="color" value="#00c000" aria-label="Green" title="Green" style="--swatch: #00c000">
+              <input type="radio" name="color" value="#ff8000" aria-label="Orange" title="Orange" style="--swatch: #ff8000">
+              <input type="radio" name="color" value="#ffd600" aria-label="Yellow" title="Yellow" style="--swatch: #ffd600">
+              <input type="radio" name="color" value="#0066ff" aria-label="Blue" title="Blue" style="--swatch: #0066ff">
+              <input type="radio" name="color" value="#000000" aria-label="Black" title="Black" style="--swatch: #000000">
+              <input type="radio" name="color" value="#808080" aria-label="Gray" title="Gray" style="--swatch: #808080">
+              <input type="radio" name="color" value="#ffffff" aria-label="White" title="White" style="--swatch: #ffffff">
+              <input type="color" id="custom-color" value="#8000ff" aria-label="Custom color" title="Custom color">
+            </div>
+          </fieldset>
+        </div>
         <button type="button" id="delete" class="danger secondary small" disabled>Delete box</button>
       </div>
 
@@ -123,9 +164,18 @@
   const img = $("img"), stage = $("stage"), svg = $("boxes"), selection = $("selection");
   const format = $("format"), quality = $("quality"), del = $("delete");
 
-  const RED = "#ff0000", BLACK = "#000000";
+  const custom = $("custom-color");
+  const presets = [...document.querySelectorAll('[name="color"]')];
 
-  // Boxes in source pixels, in drawing order: { mode: "mark" | "censor", x, y, w, h }.
+  // The color for new boxes in each mode, remembered between visits.
+  const STORE = "image-redact-colors";
+  const colors = { mark: "#ff0000", censor: "#000000" };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE));
+    for (const m in colors) if (/^#[0-9a-f]{6}$/.test(saved?.[m])) colors[m] = saved[m];
+  } catch {}
+
+  // Boxes in source pixels, in drawing order: { mode: "mark" | "censor", color, x, y, w, h }.
   let boxes = [];
   let selected = null;
   let name = "image";
@@ -161,10 +211,10 @@
       rect.setAttribute("height", r.h);
       if (b.mode === "mark") {
         rect.setAttribute("fill", "none");
-        rect.setAttribute("stroke", RED);
+        rect.setAttribute("stroke", b.color);
         rect.setAttribute("stroke-width", r.lw);
       } else {
-        rect.setAttribute("fill", BLACK);
+        rect.setAttribute("fill", b.color);
       }
       return rect;
     }));
@@ -185,6 +235,37 @@
     if (selected) text += ` · selected ${selected.w} × ${selected.h} at ${selected.x}, ${selected.y}`;
     $("info").textContent = text;
   }
+
+  // Shows the active mode's color: its preset swatch, or the custom one.
+  function showColor() {
+    const c = colors[mode()];
+    for (const p of presets) p.checked = p.value === c;
+    if (!presets.some((p) => p.checked)) custom.value = c;
+  }
+
+  function setColor(c, m = mode()) {
+    colors[m] = c;
+    try {
+      localStorage.setItem(STORE, JSON.stringify(colors));
+    } catch {}
+    showColor();
+  }
+
+  // Picking a color also recolors the selected box, if it's a box of the active mode.
+  function pickColor(c) {
+    setColor(c);
+    if (selected?.mode === mode()) {
+      selected.color = c;
+      render();
+    }
+  }
+
+  for (const p of presets) p.addEventListener("change", () => pickColor(p.value));
+  // Clicking the custom swatch picks its last color right away, as well as opening the picker.
+  custom.addEventListener("click", () => pickColor(custom.value));
+  custom.addEventListener("input", () => pickColor(custom.value));
+  for (const r of document.querySelectorAll('[name="mode"]')) r.addEventListener("change", showColor);
+  showColor();
 
   async function load(file) {
     if (!file) return;
@@ -260,9 +341,12 @@
       const start = { x: corner.includes("e") ? b.x + b.w : b.x, y: corner.includes("s") ? b.y + b.h : b.y };
       drag = { kind: "resize", box: b, anchor, start, p };
     } else if ((selected = boxAt(p) ?? null)) {
+      // The controls follow the selected box, so the next box drawn matches it.
+      $(`mode-${selected.mode}`).checked = true;
+      setColor(selected.color);
       drag = { kind: "move", box: selected, orig: { ...selected }, p };
     } else {
-      const box = { mode: mode(), ...span(p, p) };
+      const box = { mode: mode(), color: colors[mode()], ...span(p, p) };
       boxes.push(box);
       drag = { kind: "draw", box, anchor: p, start: p, p };
     }
@@ -344,11 +428,11 @@
     for (const b of boxes) {
       if (b.mode === "mark") {
         const r = markRect(b, lw);
-        ctx.strokeStyle = RED;
+        ctx.strokeStyle = b.color;
         ctx.lineWidth = r.lw;
         ctx.strokeRect(r.x, r.y, r.w, r.h);
       } else {
-        ctx.fillStyle = BLACK;
+        ctx.fillStyle = b.color;
         ctx.fillRect(b.x, b.y, b.w, b.h);
       }
     }

@@ -17,6 +17,7 @@ async function testImage(page) {
 
 const info = (page) => page.locator("#info");
 const RED = [255, 0, 0], BLACK = [0, 0, 0], WHITE = [255, 255, 255];
+const GREEN = [0, 192, 0], BLUE = [0, 102, 255], GRAY = [128, 128, 128];
 
 async function load(page) {
   await page.getByLabel("Image", { exact: true }).setInputFiles(await testImage(page));
@@ -60,9 +61,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("the editor stays hidden until an image is loaded", async ({ page }) => {
-  await expect(page.getByLabel("Mark (red outline)")).toBeHidden();
+  await expect(page.getByLabel("Mark (outline)")).toBeHidden();
   await load(page);
-  await expect(page.getByLabel("Mark (red outline)")).toBeChecked();
+  await expect(page.getByLabel("Mark (outline)")).toBeChecked();
   await expect(page.getByRole("button", { name: "Delete box" })).toBeDisabled();
 });
 
@@ -72,7 +73,7 @@ test("rejects a file that isn't an image", async ({ page }) => {
   });
   await expect(page.getByText("That file isn't an image this browser can open.")).toBeVisible();
   await expect(page.getByLabel("Image", { exact: true })).toHaveAttribute("aria-invalid", "true");
-  await expect(page.getByLabel("Mark (red outline)")).toBeHidden();
+  await expect(page.getByLabel("Mark (outline)")).toBeHidden();
 });
 
 test("draws a red outline inside the marked box", async ({ page }) => {
@@ -86,11 +87,78 @@ test("draws a red outline inside the marked box", async ({ page }) => {
 
 test("draws a filled black box in censor mode", async ({ page }) => {
   await load(page);
-  await page.getByLabel("Censor (black box)").check();
+  await page.getByLabel("Censor (filled box)").check();
   await drag(page, [200, 100], [150, 40]); // dragging up and left works too
   await expect(info(page)).toHaveText("Image 400 × 200 · 1 box · selected 50 × 60 at 150, 40");
   const file = await download(page, [[149, 70], [150, 70], [175, 70], [199, 99], [200, 70]]);
   expect(file.colors).toEqual([WHITE, BLACK, BLACK, BLACK, WHITE]);
+});
+
+test("each mode starts with its default color", async ({ page }) => {
+  await load(page);
+  await expect(page.getByLabel("Red")).toBeChecked();
+  await page.getByLabel("Censor (filled box)").check();
+  await expect(page.getByLabel("Black")).toBeChecked();
+});
+
+test("draws boxes in a preset color, remembered per mode", async ({ page }) => {
+  await load(page);
+  await page.getByLabel("Green").check();
+  await drag(page, [20, 30], [120, 80]);
+  await page.getByLabel("Censor (filled box)").check();
+  await expect(page.getByLabel("Black")).toBeChecked();
+  await page.getByLabel("Gray").check();
+  await drag(page, [200, 30], [300, 80]);
+  await page.getByLabel("Mark (outline)").check();
+  await expect(page.getByLabel("Green")).toBeChecked();
+  const file = await download(page, [[20, 50], [250, 50]]);
+  expect(file.colors).toEqual([GREEN, GRAY]);
+});
+
+test("draws boxes in a custom color", async ({ page }) => {
+  await load(page);
+  await page.getByLabel("Censor (filled box)").check();
+  await page.getByLabel("Custom color").fill("#123456");
+  await expect(page.getByLabel("Black")).not.toBeChecked();
+  await drag(page, [20, 30], [120, 80]);
+  const file = await download(page, [[70, 55]]);
+  expect(file.colors).toEqual([[0x12, 0x34, 0x56]]);
+});
+
+test("picking a color recolors the selected box only", async ({ page }) => {
+  await load(page);
+  await drag(page, [20, 30], [120, 80]);
+  await page.getByLabel("Green").check();
+  await page.keyboard.press("Escape");
+  await page.getByLabel("Blue").check();
+  await drag(page, [200, 30], [300, 80]);
+  const file = await download(page, [[20, 50], [200, 50]]);
+  expect(file.colors).toEqual([GREEN, BLUE]);
+});
+
+test("selecting a box switches the controls to its mode and color", async ({ page }) => {
+  await load(page);
+  await page.getByLabel("Censor (filled box)").check();
+  await page.getByLabel("Blue").check();
+  await drag(page, [20, 30], [120, 80]);
+  await page.keyboard.press("Escape");
+  await page.getByLabel("Mark (outline)").check();
+  await expect(page.getByLabel("Red")).toBeChecked();
+  await drag(page, [70, 55], [70, 55]);
+  await expect(page.getByLabel("Censor (filled box)")).toBeChecked();
+  await expect(page.getByLabel("Blue")).toBeChecked();
+});
+
+test("remembers the colors after a reload", async ({ page }) => {
+  await load(page);
+  await page.getByLabel("Green").check();
+  await page.getByLabel("Censor (filled box)").check();
+  await page.getByLabel("White").check();
+  await page.reload();
+  await load(page);
+  await expect(page.getByLabel("Green")).toBeChecked();
+  await page.getByLabel("Censor (filled box)").check();
+  await expect(page.getByLabel("White")).toBeChecked();
 });
 
 test("a click without dragging adds no box and clears the selection", async ({ page }) => {
@@ -104,7 +172,7 @@ test("a click without dragging adds no box and clears the selection", async ({ p
 
 test("dragging a box moves it, but not past the image edge", async ({ page }) => {
   await load(page);
-  await page.getByLabel("Censor (black box)").check();
+  await page.getByLabel("Censor (filled box)").check();
   await drag(page, [20, 30], [120, 80]);
   await drag(page, [70, 55], [110, 75]);
   await expect(info(page)).toHaveText("Image 400 × 200 · 1 box · selected 100 × 50 at 60, 50");
@@ -115,7 +183,7 @@ test("dragging a box moves it, but not past the image edge", async ({ page }) =>
 test("a mark is moved by its outline; drawing inside it adds a new box", async ({ page }) => {
   await load(page);
   await drag(page, [20, 20], [220, 180]);
-  await page.getByLabel("Censor (black box)").check();
+  await page.getByLabel("Censor (filled box)").check();
   await drag(page, [80, 80], [160, 120]);
   await expect(info(page)).toHaveText("Image 400 × 200 · 2 boxes · selected 80 × 40 at 80, 80");
   await drag(page, [21, 100], [41, 100]);
@@ -187,7 +255,7 @@ test("JPEG and WebP show a quality setting", async ({ page }) => {
 test("copies the result to the clipboard as PNG", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await load(page);
-  await page.getByLabel("Censor (black box)").check();
+  await page.getByLabel("Censor (filled box)").check();
   await drag(page, [0, 0], [100, 100]);
   await page.getByLabel("Format").selectOption("image/jpeg");
 
