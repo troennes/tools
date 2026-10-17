@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Unit converter</title>
+  <link rel="stylesheet" href="../styles/style.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+  <style>
+    .pair input { flex: 1 1 6rem; min-inline-size: 0; font-variant-numeric: tabular-nums; }
+    .pair select { flex: 0 1 14rem; min-inline-size: 0; }
+    .swap { margin-block: var(--space-2xs); text-align: center; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container slim">
+      <ul><li><a href="../index.html">← Tools</a></li></ul>
+    </nav>
+  </header>
+
+  <main class="container slim flow">
+    <hgroup>
+      <h1>Unit converter</h1>
+      <p>Convert weight, length, temperature, area, volume and time.</p>
+    </hgroup>
+
+    <nav class="tabs" aria-label="Category">
+      <ul id="tabs"></ul>
+    </nav>
+
+    <div>
+      <fieldset role="group" class="pair">
+        <input id="a" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="First value">
+        <select id="ua" aria-label="First unit"></select>
+      </fieldset>
+      <small id="a-error" hidden></small>
+      <div class="swap">
+        <button type="button" id="swap" class="neutral secondary small" aria-label="Swap units" data-tooltip="Swap units">⇅</button>
+      </div>
+      <fieldset role="group" class="pair">
+        <input id="b" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-label="Second value">
+        <select id="ub" aria-label="Second unit"></select>
+      </fieldset>
+      <small id="b-error" hidden></small>
+    </div>
+  </main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // Linear units are [name, symbol, size in the category's base unit].
+  // Temperature units instead convert to and from kelvin. A string starts a group of units.
+  const CATEGORIES = [
+    { name: "Weight", from: "kg", to: "lb", units: [
+      ["Milligram", "mg", 1e-6],
+      ["Gram", "g", 1e-3],
+      ["Kilogram", "kg", 1],
+      ["Tonne", "t", 1000],
+      ["Ounce", "oz", 0.028349523125],
+      ["Pound", "lb", 0.45359237],
+      ["Stone", "st", 6.35029318],
+    ] },
+    { name: "Length", from: "m", to: "ft", units: [
+      ["Millimetre", "mm", 1e-3],
+      ["Centimetre", "cm", 1e-2],
+      ["Metre", "m", 1],
+      ["Kilometre", "km", 1000],
+      ["Inch", "in", 0.0254],
+      ["Foot", "ft", 0.3048],
+      ["Yard", "yd", 0.9144],
+      ["Mile", "mi", 1609.344],
+      ["Nautical mile", "nmi", 1852],
+    ] },
+    { name: "Temperature", from: "°C", to: "°F", units: [
+      ["Celsius", "°C", (c) => c + 273.15, (k) => k - 273.15],
+      ["Fahrenheit", "°F", (f) => (f - 32) * 5 / 9 + 273.15, (k) => (k - 273.15) * 9 / 5 + 32],
+      ["Kelvin", "K", (k) => k, (k) => k],
+    ] },
+    { name: "Area", from: "m²", to: "ft²", units: [
+      ["Square millimetre", "mm²", 1e-6],
+      ["Square centimetre", "cm²", 1e-4],
+      ["Square metre", "m²", 1],
+      ["Square kilometre", "km²", 1e6],
+      ["Decare / mål", "daa", 1000],
+      ["Hectare", "ha", 1e4],
+      ["Square inch", "in²", 0.00064516],
+      ["Square foot", "ft²", 0.09290304],
+      ["Square yard", "yd²", 0.83612736],
+      ["Square mile", "mi²", 2589988.110336],
+      ["Acre", "ac", 4046.8564224],
+    ] },
+    { name: "Volume", from: "L", to: "imp gal", units: [
+      "Metric",
+      ["Millilitre", "mL", 1e-3],
+      ["Decilitre", "dL", 0.1],
+      ["Litre", "L", 1],
+      ["Cubic metre", "m³", 1000],
+      ["Teaspoon", "tsp", 0.005],
+      ["Tablespoon", "tbsp", 0.015],
+      ["Cup", "cup", 0.25],
+      "Imperial",
+      ["Fluid ounce", "imp fl oz", 0.0284130625],
+      ["Pint", "imp pt", 0.56826125],
+      ["Gallon", "imp gal", 4.54609],
+      "US",
+      ["Teaspoon", "US tsp", 0.00492892159375],
+      ["Tablespoon", "US tbsp", 0.01478676478125],
+      ["Fluid ounce", "US fl oz", 0.0295735295625],
+      ["Cup", "US cup", 0.2365882365],
+      ["Pint", "US pt", 0.473176473],
+      ["Gallon", "US gal", 3.785411784],
+    ] },
+    { name: "Time", from: "h", to: "min", units: [
+      ["Millisecond", "ms", 1e-3],
+      ["Second", "s", 1],
+      ["Minute", "min", 60],
+      ["Hour", "h", 3600],
+      ["Day", "d", 86400],
+      ["Week", "wk", 604800],
+      ["Month", "mo", 2629746],    // 1/12 of a Gregorian year
+      ["Year", "yr", 31556952],    // 365.2425 days
+    ] },
+  ];
+
+  const sides = {
+    a: { input: $("a"), select: $("ua"), error: $("a-error") },
+    b: { input: $("b"), select: $("ub"), error: $("b-error") },
+  };
+  const other = { a: "b", b: "a" };
+
+  // What each tab shows, kept while the page is open. `source` is the side last typed in.
+  const state = CATEGORIES.map((c) => ({ a: "1", b: "", ua: c.from, ub: c.to, source: "a" }));
+  let current = 0;
+
+  // Accepts "12.5", "12,5", "-3", "1 000" and "1e-9". Returns null for empty, NaN for anything unreadable.
+  function parse(text) {
+    const s = text.replace(/\s+/g, "").replace(",", ".");
+    if (!s) return null;
+    return /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(s) ? Number(s) : NaN;
+  }
+
+  // About 6 significant digits, switching to e-notation outside 1e-6 to 1e15.
+  function format(x) {
+    const r = Number(x.toPrecision(6));
+    if (r === 0) return "0";
+    const abs = Math.abs(r);
+    if (abs >= 1e15 || abs < 1e-6) return r.toExponential().replace("e+", "e");
+    return String(r);
+  }
+
+  const unit = (symbol) => CATEGORIES[current].units.find((u) => Array.isArray(u) && u[1] === symbol);
+
+  function unitOptions(units) {
+    const options = [];
+    let parent = null;
+    for (const u of units) {
+      if (typeof u === "string") {
+        parent = document.createElement("optgroup");
+        parent.label = u;
+        options.push(parent);
+        continue;
+      }
+      const [name, symbol] = u;
+      const option = new Option(name.toLowerCase() === symbol ? name : `${name} (${symbol})`, symbol);
+      if (parent) parent.append(option);
+      else options.push(option);
+    }
+    return options;
+  }
+  const toBase = (u, x) => typeof u[2] === "function" ? u[2](x) : x * u[2];
+  const fromBase = (u, x) => typeof u[3] === "function" ? u[3](x) : x / u[2];
+
+  function setError(side, msg) {
+    const { input, error } = sides[side];
+    if (msg) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+    error.textContent = msg ?? "";
+    error.hidden = !msg;
+  }
+
+  // Recompute the other side from the source side.
+  function convert() {
+    const s = state[current], src = s.source, dst = other[src];
+    const from = unit(sides[src].select.value), to = unit(sides[dst].select.value);
+    const x = parse(sides[src].input.value);
+    let msg = null;
+    if (Number.isNaN(x)) msg = "Enter a number, like 12.5.";
+    else if (x !== null && CATEGORIES[current].name === "Temperature" && toBase(from, x) < 0) msg = "That's below absolute zero.";
+    else if (x !== null && x < 0 && CATEGORIES[current].name !== "Temperature") msg = "Enter a number of 0 or more.";
+    setError(src, msg);
+    setError(dst, null);
+    sides[dst].input.value = x === null || msg ? "" : format(fromBase(to, toBase(from, x)));
+    save();
+  }
+
+  function save() {
+    const s = state[current];
+    s.a = sides.a.input.value;
+    s.b = sides.b.input.value;
+    s.ua = sides.a.select.value;
+    s.ub = sides.b.select.value;
+  }
+
+  function show(i) {
+    current = i;
+    [...$("tabs").querySelectorAll("button")].forEach((btn, j) => {
+      if (j === i) btn.setAttribute("aria-current", "page");
+      else btn.removeAttribute("aria-current");
+    });
+    const s = state[i];
+    sides.a.select.replaceChildren(...unitOptions(CATEGORIES[i].units));
+    sides.b.select.replaceChildren(...unitOptions(CATEGORIES[i].units));
+    sides.a.select.value = s.ua;
+    sides.b.select.value = s.ub;
+    sides.a.input.value = s.a;
+    sides.b.input.value = s.b;
+    convert();
+  }
+
+  CATEGORIES.forEach((c, i) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = c.name;
+    btn.addEventListener("click", () => show(i));
+    li.append(btn);
+    $("tabs").append(li);
+  });
+
+  for (const side of ["a", "b"]) {
+    sides[side].input.addEventListener("input", () => {
+      state[current].source = side;
+      convert();
+    });
+    // A new unit keeps the number last typed and updates the other side.
+    sides[side].select.addEventListener("change", convert);
+  }
+
+  // Swap the units; the number last typed stays put, so 1 m = 3.28 ft becomes 1 ft = 0.3048 m.
+  $("swap").addEventListener("click", () => {
+    const ua = sides.a.select.value;
+    sides.a.select.value = sides.b.select.value;
+    sides.b.select.value = ua;
+    convert();
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>
