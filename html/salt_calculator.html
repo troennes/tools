@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Salt calculator</title>
+  <link rel="stylesheet" href="../styles/style.css">
+  <link rel="stylesheet" href="../styles/theme.css">
+  <style>
+    #pref { max-inline-size: 8rem; }
+
+    .pot { --card-padding: var(--space-s); }
+    .pot .head { --repel-vertical-alignment: center; }
+    .pot h2 { margin: 0; font-size: var(--size-h4); }
+    .pot .head .cluster { --gap: var(--space-s); align-items: center; }
+    .pot .close[hidden] { display: none; }
+
+    .weights { display: flex; flex-wrap: wrap; gap: var(--space-2xs); }
+    .weights input { inline-size: 6rem; font-variant-numeric: tabular-nums; }
+    .water { margin-inline: 0; }
+    .water input { max-inline-size: 8rem; }
+    .water[hidden] { display: none; }
+
+    .total { --repel-vertical-alignment: baseline; border-block-start: 1px solid var(--color-border-weak); padding-block-start: var(--space-xs); }
+    .total small, .total .spoons { display: block; color: var(--color-text-muted); }
+    .total .amount { text-align: end; font-variant-numeric: tabular-nums; }
+    .total output { font-size: var(--size-h3); font-weight: var(--font-weight-bold); }
+    .total .amount[hidden] { display: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <nav class="container slim">
+      <ul><li><a href="../index.html">← Tools</a></li></ul>
+    </nav>
+  </header>
+
+  <main class="container slim flow">
+    <hgroup>
+      <h1>Salt calculator</h1>
+      <p>Weigh what goes in each pot and get the salt for it.</p>
+    </hgroup>
+
+    <form id="form">
+      <label for="pref">Salt preference (%)</label>
+      <input id="pref" type="text" inputmode="decimal" autocomplete="off" value="1">
+      <small id="pref-error" hidden></small>
+
+      <div id="pots" class="flow"></div>
+
+      <button type="button" id="add-pot" class="neutral secondary">+ Add pot</button>
+    </form>
+  </main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const pref = $("pref"), prefError = $("pref-error"), potsEl = $("pots");
+
+  const STORE = "salt-calculator", WATER_RATIO = 10, BOIL_FACTOR = 2, G_PER_TSP = 6, MAX_PREF = 10;
+  const FRACTIONS = { 0: "", 0.25: "¼", 0.5: "½", 0.75: "¾" };
+  const nf = (digits) => new Intl.NumberFormat("en", { maximumFractionDigits: digits });
+
+  // Accepts "250", "12.5" and "12,5". Returns null for empty, NaN for anything unreadable.
+  function parse(text) {
+    const s = text.trim().replace(",", ".");
+    if (!s) return null;
+    return /^(\d+\.?\d*|\.\d+)$/.test(s) ? Number(s) : NaN;
+  }
+
+  function setInvalid(input, bad) {
+    if (bad) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+  }
+
+  function setError(small, msg) {
+    small.textContent = msg ?? "";
+    small.hidden = !msg;
+  }
+
+  const grams = (g) => `${nf(g < 10 ? 1 : 0).format(g)} g`;
+
+  // Table salt: nearest ¼ tsp, or nearest ½ tbsp from one tablespoon up.
+  function spoons(g) {
+    const fmt = (n) => {
+      const whole = Math.floor(n);
+      return (whole || !FRACTIONS[n - whole] ? String(whole) : "") + FRACTIONS[n - whole];
+    };
+    if (g >= 3 * G_PER_TSP) return `≈ ${fmt(Math.round(g / (3 * G_PER_TSP) * 2) / 2)} tbsp`;
+    const tsp = Math.round(g / G_PER_TSP * 4) / 4;
+    return tsp ? `≈ ${fmt(tsp)} tsp` : "a pinch";
+  }
+
+  const pots = [];
+
+  function addPot() {
+    const section = document.createElement("section");
+    section.className = "card pot flow-tight";
+    section.innerHTML = `
+      <div class="repel head">
+        <h2></h2>
+        <div class="cluster">
+          <label><input type="checkbox" role="switch"> Boiling</label>
+          <button type="button" class="close"></button>
+        </div>
+      </div>
+      <div class="weights"></div>
+      <small class="weights-error" hidden></small>
+      <fieldset class="bare water" hidden>
+        <label>Water (g)</label>
+        <input type="text" inputmode="decimal" autocomplete="off">
+        <small>Starts at 10× the food, salted at twice your preference.</small>
+      </fieldset>
+      <div class="repel total">
+        <small class="detail"></small>
+        <div class="amount"><output></output><span class="spoons"></span></div>
+      </div>`;
+    const q = (sel) => section.querySelector(sel);
+    const pot = {
+      section, waterEdited: false,
+      title: q("h2"), boiling: q("[role=switch]"), remove: q(".close"),
+      weights: q(".weights"), weightsError: q(".weights-error"),
+      waterBox: q(".water"), water: q(".water input"), waterHint: q(".water small"),
+      detail: q(".detail"), amount: q(".amount"), output: q("output"), spoons: q(".spoons"),
+    };
+    pot.boiling.addEventListener("change", update);
+    pot.water.addEventListener("input", () => { pot.waterEdited = pot.water.value.trim() !== ""; update(); });
+    pot.remove.addEventListener("click", () => {
+      const i = pots.indexOf(pot);
+      pots.splice(i, 1);
+      section.remove();
+      update();
+      pots[Math.min(i, pots.length - 1)].weights.querySelector("input").focus();
+    });
+    pots.push(pot);
+    potsEl.append(section);
+    return pot;
+  }
+
+  function addWeight(pot) {
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "decimal";
+    input.autocomplete = "off";
+    input.placeholder = "g";
+    input.addEventListener("input", update);
+    // Emptied fields in the middle of the row go away once you leave them.
+    input.addEventListener("blur", () => {
+      if (!input.value.trim() && input !== pot.weights.lastElementChild) { input.remove(); update(); }
+    });
+    pot.weights.append(input);
+  }
+
+  function update() {
+    const p = parse(pref.value);
+    const prefOk = p > 0 && p <= MAX_PREF;
+    setInvalid(pref, !prefOk);
+    setError(prefError, prefOk ? null : `Enter a percentage above 0 and up to ${MAX_PREF}, like 1.`);
+    if (prefOk) try { localStorage.setItem(STORE, JSON.stringify({ pref: pref.value.trim() })); } catch {}
+
+    pots.forEach((pot, i) => {
+      const n = i + 1;
+      pot.section.setAttribute("aria-label", `Pot ${n}`);
+      pot.title.textContent = `Pot ${n}`;
+      pot.remove.setAttribute("aria-label", `Remove pot ${n}`);
+      pot.remove.hidden = pots.length === 1;
+
+      // Always keep one empty field at the end to type the next weight into.
+      const last = pot.weights.lastElementChild;
+      if (!last || last.value.trim()) addWeight(pot);
+
+      let food = 0, bad = false;
+      [...pot.weights.children].forEach((input, j) => {
+        input.setAttribute("aria-label", `Pot ${n} ingredient ${j + 1} (g)`);
+        const w = parse(input.value);
+        setInvalid(input, Number.isNaN(w));
+        if (Number.isNaN(w)) bad = true;
+        else if (w > 0) food += w;
+      });
+      setError(pot.weightsError, bad ? "Enter weights in grams, like 250." : null);
+
+      // The water follows 10× the food until it's edited; clearing it makes it follow again.
+      const boiling = pot.boiling.checked;
+      pot.waterBox.hidden = !boiling;
+      pot.water.id = `water-${n}`;
+      pot.waterBox.querySelector("label").htmlFor = pot.water.id;
+      pot.water.placeholder = food > 0 ? String(Math.round(food * WATER_RATIO)) : "";
+      if (!pot.waterEdited) pot.water.value = pot.water.placeholder;
+      const typed = parse(pot.water.value);
+      const waterBad = boiling && pot.waterEdited && Number.isNaN(typed);
+      setInvalid(pot.water, waterBad);
+      pot.waterHint.textContent = waterBad ? "Enter the water in grams, like 3000." : "Starts at 10× the food, salted at twice your preference.";
+      const water = pot.waterEdited ? typed : food * WATER_RATIO;
+
+      const base = boiling ? water : food;
+      const salt = boiling ? base * p * BOIL_FACTOR / 100 : base * p / 100;
+      const show = prefOk && base > 0;
+      pot.amount.hidden = !show;
+      pot.output.setAttribute("aria-label", `Salt for pot ${n}`);
+      if (show) {
+        pot.output.textContent = grams(salt);
+        pot.spoons.textContent = spoons(salt);
+        pot.detail.textContent = boiling ? `${grams(water)} of water` : `${grams(food)} of food`;
+      } else {
+        pot.detail.textContent = prefOk ? "Enter weights to see the salt." : "Fix the salt preference to see the salt.";
+      }
+    });
+  }
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE));
+    if (saved?.pref) pref.value = saved.pref;
+  } catch {}
+
+  $("form").addEventListener("submit", (e) => e.preventDefault());
+  pref.addEventListener("input", update);
+  $("add-pot").addEventListener("click", () => {
+    const pot = addPot();
+    update();
+    pot.weights.querySelector("input").focus();
+  });
+  addPot();
+  update();
+})();
+</script>
+</body>
+</html>
